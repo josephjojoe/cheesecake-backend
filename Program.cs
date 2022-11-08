@@ -32,6 +32,10 @@
 
             public void InitialiseWeights(int inputSize)
             {
+                if (_weightsInitialised == true)
+                {
+                    // Throw some error - weights should not be initialised twice for a layer.
+                }
                 _inputSize = inputSize;
                 _weights = new float[_units, _inputSize];    // Is this the right way around for the weights matrix? Make sure to test.
                 switch (_weightInitialisation)
@@ -73,14 +77,14 @@
         }
 
 
-        public enum Activation {ReLU, Sigmoid, Tanh, Swish, Softmax }
-        public enum WeightInitialisation {Zeroes, Ones, Random, Xavier };
+        public enum Activation { ReLU, Sigmoid, Tanh, Swish, Softmax }
+        public enum WeightInitialisation { Zeroes, Ones, Random, Xavier };
 
         // Delegate to allow for vectorisation of functions - application of the function to every element of an array.
-        delegate float VectorisationDelegate(float input);
+        public delegate float VectorisationDelegate(float input);
 
         // Vectorise function for single-dimensional arrays.
-        static void Vectorise(float[] vector, VectorisationDelegate function)
+        public static void Vectorise(float[] vector, VectorisationDelegate function)
         {
             for (int index = 0; index < vector.Length; index++)
             {
@@ -89,7 +93,7 @@
         }
 
         // Overloading Vectorize to work on multi-dimensional arrays.
-        static void Vectorise(float[,] array, VectorisationDelegate function)
+        public static void Vectorise(float[,] array, VectorisationDelegate function)
         {
             for (int i = 0; i < array.GetLength(0); i++)
             {
@@ -98,6 +102,11 @@
                     array[i, j] = function(array[i, j]);
                 }
             }
+        }
+
+        public static void Multiply()
+        {
+
         }
     }
 }
