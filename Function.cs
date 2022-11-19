@@ -128,6 +128,34 @@
             return output;
         }
 
+        // Predominantly used for two or more layers merging into one layer with the additional condition
+        // that the input is a matrix of vectors, such as in stochastic mini-batch gradient descent.
+        // Given a matrix with dimensions (BxA) and another matrix with dimensions (CxA), will output a
+        // matrix that concatenates them with dimensions ((B+C)xA). Extended to an arbitrary number of matrices.
+        public static float[,] Concatenate(List<float[,]> matrices)
+        {
+            int rows = 0;
+            int columns = matrices[0].GetLength(1);
+            foreach (float[,] matrix in matrices)
+            {
+                rows += matrix.GetLength(0);
+            }
+            float[,] output = new float[rows, columns];
+            int offset = 0;
+            foreach (float[,] matrix in matrices)
+            {
+                for (int i = 0; i < matrix.GetLength(0); i++)
+                {
+                    for (int j = 0; j < matrix.GetLength(1); j++)
+                    {
+                        output[i + offset, j] = matrix[i, j];
+                    }
+                }
+                offset += matrix.GetLength(0);
+            }
+            return output;
+        }
+
         public static float[,] HadamardProduct(float[,] matrix1, float[,] matrix2)
         {
             if (!(matrix1.GetLength(0) == matrix2.GetLength(0) && matrix1.GetLength(1) == matrix2.GetLength(1)))

@@ -9,9 +9,12 @@ namespace Backend
     public abstract class Layer
     {
         public abstract float[] ForwardPass(float[] input);
-        // public abstract float[,] ForwardPass(float[,] input)
-        // Needed to be implemented for mini-batch stochastic gradient descent.
+        
+        // Needed for stochastic mini-batch gradient descent.
+        public abstract float[,] ForwardPass(float[,] inputs);
 
+        // ForwardPass accepting List<float[]> and List<float[,]> aren't included in this abstract class definition intentionally.
+        // This is because InputLayer does not need to implement them - they are, however, implemented in DenseLayer.cs
         public abstract int GetOutputSize();
     }
 }

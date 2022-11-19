@@ -28,6 +28,12 @@ namespace Backend
             return input;
         }
 
+        // Override for stochastic mini-batch gradient descent.
+        public override float[,] ForwardPass(float[,] inputs)
+        {
+            return inputs;
+        }
+
         public override int GetOutputSize()
         {
             return _inputSize;

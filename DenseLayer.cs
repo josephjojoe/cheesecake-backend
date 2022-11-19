@@ -142,6 +142,7 @@ namespace Backend
             return output;
         }
 
+        // Overloading ForwardPass to support a list of inputs, used when the Dense layer is merging outputs from multiple previous layers.
         public float[] ForwardPass(List<float[]> inputs)
         {
             if (_weightsInitialised == false)
@@ -175,6 +176,66 @@ namespace Backend
             }
             return output;
         }
+
+        // Used when performing forward pass on a batched set of vectors (grouped in the form of a matrix).
+        public override float[,] ForwardPass(float[,] inputs)
+        {
+            if (_weightsInitialised == false)
+            {
+                // Throw some error - weights must be initialised.
+            }
+            float[,] output = new float[inputs.GetLength(0),inputs.GetLength(1)];
+            output = Function.Multiply(_weights, inputs);
+            switch (_activation)
+            {
+                case Activation.ReLU:
+                    Function.Vectorise(output, Function.ReLU);
+                    return output;
+                case Activation.Sigmoid:
+                    Function.Vectorise(output, Function.Sigmoid);
+                    return output;
+                case Activation.SiLU:
+                    Function.Vectorise(output, Function.SiLU);
+                    return output;
+                case Activation.Tanh:
+                    Function.Vectorise(output, Function.Tanh);
+                    return output;
+                case Activation.None:
+                    break;    // Returns output outside of switch-case so that all code paths return a value.
+            }
+            return output;
+        }
+
+        // Used for merge phase with mini-batch stochastic gradient descent.
+        public float[,] ForwardPass(List<float[,]> inputs)
+        {
+            if (_weightsInitialised == false)
+            {
+                // Throw some error - weights must be initialised.
+            }
+            float[,] output;
+            switch (_mergeType)
+            {
+                // Note to self - check that DenseLayer constructor allows for this?
+                case MergeType.Add:
+                    float[,] addInput = new float[inputs[0].GetLength(0), inputs[0].GetLength(1)];
+                    foreach (float[,] input in inputs)
+                    {
+                        addInput = Function.Add(addInput, input);
+                    }
+                    output = ForwardPass(addInput);
+                    break;
+                case MergeType.Concatenate:
+                    output = ForwardPass(Function.Concatenate(inputs));
+                    break;
+                default:
+                    throw new NotImplementedException();
+                    // Default shouldn't be checked because all calls to this method should be for merging layers.
+            }
+            return output;
+        }
+
+
 
 
         public void ModifyWeights(float[,] modification)
