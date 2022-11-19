@@ -69,7 +69,7 @@ namespace Backend
             InitialiseWeights(_inputSize);    // Initialises weights regardless of merge type.
         }
 
-        public override int GetOutputSize()    // Output size of one layer is the input size of the next (barring multi-branch layer topologies).
+        public override int GetOutputSize()    // Output size of one layer is the input size of the next (barring multi-branch layer topologies and batching).
         {
             return _units;
         }
@@ -234,9 +234,6 @@ namespace Backend
             }
             return output;
         }
-
-
-
 
         public void ModifyWeights(float[,] modification)
         {
