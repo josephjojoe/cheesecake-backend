@@ -9,36 +9,39 @@ namespace Backend
     public class DenseLayer : Layer
     {
         private float[,]? _weights;    // Weights are null until initialised with model compilation, as input data shape must be known.
-        private bool _weightsInitialised = false;    // Flag to check if weights are initialised yet (must be done before forward pass), prevents double initialisation.
         private float[] _bias;
         private int _units;
         private Activation _activation;
         private int _inputSize;
         private WeightInitialisation _weightInitialisation;    // Weight initialisation type should be known at time of layer construction.
+        private BiasInitialisation _biasInitialisation;
         // These three variables are nullable as whether they are used depends on whether there are one or more input layers.
         private Layer? _previousLayer;
         private List<Layer>? _previousLayers = new List<Layer>();
         private MergeType? _mergeType;
 
         // Constructor for just one input layer.
-        public DenseLayer(int units, Activation activation, WeightInitialisation weightInitialisation, Layer previousLayer)
+        public DenseLayer(int units, Activation activation, WeightInitialisation weightInitialisation, BiasInitialisation biasInitialisation, Layer previousLayer)
         {
             _units = units;
             _bias = new float[units];
             _activation = activation;
             _weightInitialisation = weightInitialisation;
+            _biasInitialisation = biasInitialisation;
             _previousLayer = previousLayer;
             _inputSize = previousLayer.GetOutputSize();
-            InitialiseWeights(_inputSize);
+            InitialiseWeights();
+            InitialiseBias();
         }
 
         // Overloading constructor to support multiple input layers.
-        public DenseLayer(int units, Activation activation, WeightInitialisation weightInitialisation, List<Layer> previousLayers, MergeType mergeType)
+        public DenseLayer(int units, Activation activation, WeightInitialisation weightInitialisation, BiasInitialisation biasInitialisation, List<Layer> previousLayers, MergeType mergeType)
         {
             _units = units;
             _bias = new float[units];
             _activation = activation;
             _weightInitialisation = weightInitialisation;
+            _biasInitialisation = biasInitialisation;
             _previousLayers = previousLayers;
             if (mergeType == MergeType.Add)
             {
@@ -66,7 +69,8 @@ namespace Backend
                     _inputSize += l.GetOutputSize();    // Output size with concatenate is the sum of all input branch output dimensions.
                 }
             }
-            InitialiseWeights(_inputSize);    // Initialises weights regardless of merge type.
+            InitialiseWeights();    // Initialises weights regardless of merge type.
+            InitialiseBias();
         }
 
         public override int GetOutputSize()    // Output size of one layer is the input size of the next (barring multi-branch layer topologies and batching).
@@ -79,13 +83,30 @@ namespace Backend
             return _activation;
         }
 
-        public void InitialiseWeights(int inputSize)
+        public void InitialiseBias()
         {
-            if (_weightsInitialised == true)
+            switch (_biasInitialisation)
             {
-                // Throw some error - weights should not be initialised twice for a layer.
+                case BiasInitialisation.Ones:    // Anonymous functions that initialise weights.
+                    Function.Vectorise(_bias, x => 1);
+                    break;
+                case BiasInitialisation.Zeroes:
+                    Function.Vectorise(_bias, x => 0);
+                    break;
+                case BiasInitialisation.Random:
+                    Random rngRandom = new Random();
+                    Function.Vectorise(_bias, x => (float)rngRandom.NextDouble());
+                    break;
+                case BiasInitialisation.Xavier:
+                    Random rngXavier = new Random();
+                    float lower = (float)-(1.0 / Math.Sqrt(_inputSize)), upper = (float)(1.0 / Math.Sqrt(_inputSize));
+                    Function.Vectorise(_bias, x => lower + ((float)rngXavier.NextDouble() * (upper - lower)));
+                    break;
             }
-            _inputSize = inputSize;
+        }
+
+        public void InitialiseWeights()
+        {
             _weights = new float[_units, _inputSize];    // Is this the right way around for the weights matrix? Make sure to test!
             switch (_weightInitialisation)
             {
@@ -105,7 +126,6 @@ namespace Backend
                     Function.Vectorise(_weights, x => lower + ((float)rngXavier.NextDouble() * (upper - lower)));
                     break;
             }
-            _weightsInitialised = true;    // Set weights initialised to true after this function is called.
         }
 
         public override float[] ForwardPass(float[] input)
@@ -114,13 +134,10 @@ namespace Backend
             {
                 // Throw some error.
             }
-            if (_weightsInitialised == false)
-            {
-                // Throw another error.
-            }
 
             float[] output = new float[_inputSize];
             output = Function.Multiply(_weights, input);
+            output = Function.Add(_bias, output);
 
             switch (_activation)
             {
@@ -137,18 +154,16 @@ namespace Backend
                     Function.Vectorise(output, Function.Tanh);
                     return output;
                 case Activation.None:
-                    break;    // Returns output outside of switch-case so that all code paths return a value.
+                    Function.Vectorise(output, Function.None);
+                    return output;
             }
+            // Returns output outside of switch-case so that all code paths return a value.
             return output;
         }
 
         // Overloading ForwardPass to support a list of inputs, used when the Dense layer is merging outputs from multiple previous layers.
         public float[] ForwardPass(List<float[]> inputs)
         {
-            if (_weightsInitialised == false)
-            {
-                // Throw some error - weights must be initialised.
-            }
             float[] output;
             switch (_mergeType)
             {
@@ -180,12 +195,9 @@ namespace Backend
         // Used when performing forward pass on a batched set of vectors (grouped in the form of a matrix).
         public override float[,] ForwardPass(float[,] inputs)
         {
-            if (_weightsInitialised == false)
-            {
-                // Throw some error - weights must be initialised.
-            }
             float[,] output = new float[inputs.GetLength(0),inputs.GetLength(1)];
             output = Function.Multiply(_weights, inputs);
+            output = Function.Add(Function.GetVectorAsMatrix(_bias, inputs.GetLength(1)), output);
             switch (_activation)
             {
                 case Activation.ReLU:
@@ -201,18 +213,16 @@ namespace Backend
                     Function.Vectorise(output, Function.Tanh);
                     return output;
                 case Activation.None:
-                    break;    // Returns output outside of switch-case so that all code paths return a value.
+                    Function.Vectorise(output, Function.None);
+                    return output;
             }
+            // Returns output outside of switch-case so that all code paths return a value.
             return output;
         }
 
         // Used for merge phase with mini-batch stochastic gradient descent.
         public float[,] ForwardPass(List<float[,]> inputs)
         {
-            if (_weightsInitialised == false)
-            {
-                // Throw some error - weights must be initialised.
-            }
             float[,] output;
             switch (_mergeType)
             {
@@ -237,28 +247,16 @@ namespace Backend
 
         public void ModifyWeights(float[,] modification)
         {
-            if (_weightsInitialised == false)
-            {
-                // Throw some error - weights must be initialised.
-            }
             Function.Add(_weights, modification);
         }
 
         public float[,] GetWeights()
         {
-            if (_weightsInitialised == false)
-            {
-                // Throw some error - weights must be initialised.
-            }
             return _weights;
         }
 
         public float[] GetWeightsDimension()
         {
-            if (_weightsInitialised == false)
-            {
-                // Throw some error - weights must be initialised.
-            }
             return new float[2] { _weights.GetLength(0), _weights.GetLength(1) };
         }
 

@@ -5,8 +5,14 @@
     {
         public static float ReLU(float n)
         {
-            if (n < 0) { return 0; }
-            else { return n; }
+            if (n > 0) { return n; }
+            else { return 0; }
+        }
+
+        public static float ReLUDerivative(float n)
+        {
+            if (n > 0) { return 1; }
+            else { return 0; }
         }
 
         public static float Sigmoid(float n)
@@ -14,9 +20,19 @@
             return (float)(1 / (1 + Math.Exp(n * -1)));
         }
 
+        public static float SigmoidDerivative(float n)
+        {
+            return Sigmoid(n) * (1 - Sigmoid(n));
+        }
+
         public static float SiLU(float n)
         {
-            return (float)(1 / (1 + Math.Exp(n * -1)) * n);
+            return (float)(n / (1 + Math.Exp(n * -1)));
+        }
+
+        public static float SiLUDerivative(float n)
+        {
+            return (float)(Math.Exp(n) * (n + Math.Exp(n) + 1) / Math.Pow(Math.Exp(n) + 1, 2));
         }
 
         public static float Tanh(float n)
@@ -24,7 +40,49 @@
             return (float)(Math.Exp(n) - Math.Exp(n * -1)) / (float)(Math.Exp(n) + Math.Exp(n * -1));
         }
 
+        public static float TanhDerivative(float n)
+        {
+            return (float)(1 - Math.Pow(Tanh(n), 2));
+        }
 
+        public static float None(float n)
+        {
+            return n;
+        }
+
+        public static float NoneDerivative(float n)
+        {
+            return 1;
+        }
+
+        public readonly static Dictionary<Func<float, float>, Func<float, float>> ActivationDictionary = new Dictionary<Func<float, float>, Func<float, float>>
+        {{ ReLU, ReLUDerivative }, { Sigmoid, SigmoidDerivative }, { Tanh, TanhDerivative }, { SiLU, SiLUDerivative }, { None, NoneDerivative }};
+
+
+        // Create actual definitions for these.
+        public static float MeanSquaredError(float output, float expectedOutput)
+        {
+            return 1;
+        }
+
+        public static float MeanSquaredErrorDerivative(float output, float expectedOutput)
+        {
+            return 1;
+        }
+
+        public static float MeanAbsoluteError(float output, float expectedOutput)
+        {
+            return 1;
+        }
+
+        public static float MeanAbsoluteErrorDerivative(float output, float expectedOutput)
+        {
+            return 1;
+        }
+
+        // Func<float, float, float> means that we are dealing with functions that take in two float arguments and output a float.
+        public readonly static Dictionary<Func<float, float, float>, Func<float, float, float>> CostDictionary = new Dictionary<Func<float, float, float>, Func<float, float, float>>
+        {{ MeanSquaredError, MeanSquaredErrorDerivative }, { MeanAbsoluteError, MeanAbsoluteErrorDerivative }};
 
         // Delegate to allow for vectorisation of functions - application of the function to every element of an array.
         // Only allows functions that map floats to floats - error checking is therefore not required in Vectorise and associated overloads.
@@ -184,6 +242,20 @@
             for (int i = 0; i < vector1.Length; i++)
             {
                 output[i] = vector1[i] * vector2[i];
+            }
+            return output;
+        }
+
+        // Creates a matrix with the same column vector repeated - used for the bias term when processing batched inputs.
+        public static float[,] GetVectorAsMatrix(float[] vector, int columns)
+        {
+            float[,] output = new float[vector.Length, columns];
+            for (int i = 0; i < vector.Length; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    output[i, j] = vector[i];
+                }
             }
             return output;
         }
