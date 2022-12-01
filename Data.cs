@@ -44,7 +44,7 @@ namespace Backend
 
                     if (input.Length != inputFeatureSize || output.Length != outputFeatureSize)
                     {
-                        throw new Exception("Dataset length didn't match model architecture");
+                        throw new Exception("Dataset inputs/outputs length didn't match specified inputs/outputs length");
                     }
 
                     inputs[i] = input;

@@ -67,5 +67,11 @@ namespace Backend
         {
             return _queueSize;
         }
+
+        public void ResetPointers()
+        {
+            headPointer = 0;
+            tailPointer = -1;
+        }
     }
 }

@@ -59,29 +59,121 @@
         {{ ReLU, ReLUDerivative }, { Sigmoid, SigmoidDerivative }, { Tanh, TanhDerivative }, { SiLU, SiLUDerivative }, { None, NoneDerivative }};
 
 
-        // Create actual definitions for these.
-        public static float MeanSquaredError(float output, float expectedOutput)
+        // Definition as per http://neuralnetworksanddeeplearning.com/chap2.html for a single training example.
+        public static float MeanSquaredError(float[] expected, float[] output)
         {
-            return 1;
+            if (expected.Length != output.Length)
+            {
+                throw new ArgumentException("Errors cannot be computed for vectors of different lengths");
+            }
+            float sum = 0;
+            for (int i = 0; i < expected.Length; i++)
+            {
+                sum += (float)Math.Pow((expected[i] - output[i]), 2);
+            }
+            return sum / 2;
         }
 
-        public static float MeanSquaredErrorDerivative(float output, float expectedOutput)
+        // Computes gradient ∇aC of the MSE cost function with respect to the activations (the output vector).
+        public static float[] MeanSquaredErrorDerivative(float[] expected, float[] output)
         {
-            return 1;
+            if (expected.Length != output.Length)
+            {
+                throw new ArgumentException("Errors cannot be computed for vectors of different lengths");
+            }
+            Function.Vectorise(expected, x => x * -1);
+            return Function.Add(output, expected);
         }
 
-        public static float MeanAbsoluteError(float output, float expectedOutput)
+        public static float MeanAbsoluteError(float[] expected, float[] output)
         {
-            return 1;
+            if (expected.Length != output.Length)
+            {
+                throw new ArgumentException("Errors cannot be computed for vectors of different lengths");
+            }
+            float sum = 0;
+            for (int i = 0; i < expected.Length; i++)
+            {
+                sum += Math.Abs(expected[i] - output[i]);
+            }
+            return sum / expected.Length;
         }
 
-        public static float MeanAbsoluteErrorDerivative(float output, float expectedOutput)
+        // Implementation as per https://stats.stackexchange.com/questions/312737/mean-absolute-error-mae-derivative
+        public static float[] MeanAbsoluteErrorDerivative(float[] expected, float[] output)
         {
-            return 1;
+            if (expected.Length != output.Length)
+            {
+                throw new ArgumentException("Errors cannot be computed for vectors of different lengths");
+            }
+            float[] grads = new float[expected.Length];
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (output[i] > expected[i])
+                {
+                    grads[i] = 1;
+                }
+                else if (output[i] < expected[i])
+                {
+                    grads[i] = -1;
+                }
+                else
+                {
+                    // Arbitrary choice of gradient made when y_pred = y_true.
+                    grads[i] = 0;
+                }
+            }
+            return grads;
+        }
+
+        public static List<float[]> SplitMatrixIntoVectors(float[,] matrix)
+        {
+            List<float[]> result = new List<float[]>();
+            for (int i = 0; i < matrix.GetLength(1); i++)
+            {
+                float[] vector = new float[matrix.GetLength(0)];
+                for (int j = 0; j < matrix.GetLength(0); j++)
+                {
+                    vector[j] = matrix[j, i];
+                }
+                result.Add(vector);
+            }
+            return result;
+        }
+
+        // Returns a vector which is the average of the column vectors of the matrix.
+        public static float[] AverageMatrix(float[,] matrix)
+        {
+            float[] result = new float[matrix.GetLength(0)];
+            List<float[]> columns = SplitMatrixIntoVectors(matrix);
+            for (int i = 0; i < result.Length; i++)
+            {
+                float temp = 0;
+                for (int j = 0; j < columns.Count; j++)
+                {
+                    temp += columns[j][i];
+                }
+                result[i] = temp / columns.Count;
+            }
+            return result;
+        }
+
+        public static float[,] Transpose(float[,] matrix)
+        {
+            float[,] transpose = new float[matrix.GetLength(1), matrix.GetLength(0)];
+            for (int i = 0; i < matrix.GetLength(0); i++)
+            {
+                for (int j = 0; j < matrix.GetLength(1); j++)
+                {
+                    transpose[j, i] = matrix[i, j];
+                }
+            }
+            return transpose;
         }
 
         // Func<float, float, float> means that we are dealing with functions that take in two float arguments and output a float.
-        public readonly static Dictionary<Func<float, float, float>, Func<float, float, float>> CostDictionary = new Dictionary<Func<float, float, float>, Func<float, float, float>>
+        public readonly static Dictionary<Func<float[], float[], float>, Func<float[], float[], float[]>> CostDictionary =
+            new Dictionary<Func<float[], float[], float>, Func<float[], float[], float[]>>
         {{ MeanSquaredError, MeanSquaredErrorDerivative }, { MeanAbsoluteError, MeanAbsoluteErrorDerivative }};
 
         // Delegate to allow for vectorisation of functions - application of the function to every element of an array.
@@ -190,7 +282,7 @@
         // that the input is a matrix of vectors, such as in stochastic mini-batch gradient descent.
         // Given a matrix with dimensions (BxA) and another matrix with dimensions (CxA), will output a
         // matrix that concatenates them with dimensions ((B+C)xA). Extended to an arbitrary number of matrices.
-        public static float[,] Concatenate(List<float[,]> matrices)
+        public static float[,] RowConcatenate(List<float[,]> matrices)
         {
             int rows = 0;
             int columns = matrices[0].GetLength(1);
@@ -212,6 +304,30 @@
                 offset += matrix.GetLength(0);
             }
             return output;
+        }
+
+        // Returns matrix with input vectors as columns.
+        public static float[,] ConcatenateVectorsIntoMatrix(List<float[]> vectors)
+        {
+            List<int> vectorLengths = new List<int>();
+            foreach (float[] vector in vectors)
+            {
+                vectorLengths.Add(vector.Length);
+            }
+            if (vectorLengths.Distinct().Count() > 1)
+            {
+                throw new Exception("Vectors must all have the same length");
+            }
+
+            float[,] matrix = new float[vectors[0].Length, vectors.Count];
+            for (int i = 0; i < vectors.Count; i++)
+            {
+                for (int j = 0; j < vectors[0].Length; j++)
+                {
+                    matrix[j, i] = vectors[i][j];
+                }
+            }
+            return matrix;
         }
 
         public static float[,] HadamardProduct(float[,] matrix1, float[,] matrix2)

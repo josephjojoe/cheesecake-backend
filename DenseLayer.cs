@@ -11,7 +11,7 @@ namespace Backend
         private float[,]? _weights;    // Weights are null until initialised with model compilation, as input data shape must be known.
         private float[] _bias;
         private int _units;
-        private Activation _activation;
+        private Activation _activationType;
         private int _inputSize;
         private WeightInitialisation _weightInitialisation;    // Weight initialisation type should be known at time of layer construction.
         private BiasInitialisation _biasInitialisation;
@@ -19,13 +19,16 @@ namespace Backend
         private Layer? _previousLayer;
         private List<Layer>? _previousLayers = new List<Layer>();
         private MergeType? _mergeType;
+        // Variables used so that values can be easily retrieved for model training.
+        private float[,]? _weightedOutput;
+        private float[,]? _activationOutput;
 
         // Constructor for just one input layer.
         public DenseLayer(int units, Activation activation, WeightInitialisation weightInitialisation, BiasInitialisation biasInitialisation, Layer previousLayer)
         {
             _units = units;
             _bias = new float[units];
-            _activation = activation;
+            _activationType = activation;
             _weightInitialisation = weightInitialisation;
             _biasInitialisation = biasInitialisation;
             _previousLayer = previousLayer;
@@ -39,7 +42,7 @@ namespace Backend
         {
             _units = units;
             _bias = new float[units];
-            _activation = activation;
+            _activationType = activation;
             _weightInitialisation = weightInitialisation;
             _biasInitialisation = biasInitialisation;
             _previousLayers = previousLayers;
@@ -80,7 +83,7 @@ namespace Backend
 
         public Activation GetActivation()
         {
-            return _activation;
+            return _activationType;
         }
 
         public void InitialiseBias()
@@ -128,18 +131,68 @@ namespace Backend
             }
         }
 
+        // WeightedOutput methods will be used for model training, as we need this data to compute errors in each layer.
+        public override float[] WeightedOutput(float[] input)
+        {
+            return Function.Add(_bias, Function.Multiply(_weights, input));
+        }
+
+        public float[] WeightedOutput(List<float[]> inputs)
+        {
+            switch (_mergeType)
+            {
+                case MergeType.Add:
+                    float[] addInput = new float[inputs[0].Length];
+                    foreach (float[] input in inputs)
+                    {
+                        addInput = Function.Add(addInput, input);
+                    }
+                    return WeightedOutput(addInput);
+                case MergeType.Concatenate:
+                    List<float> concatenateInput = new List<float>();
+                    foreach (float[] input in inputs)
+                    {
+                        concatenateInput.AddRange(input);
+                    }
+                    return WeightedOutput(concatenateInput.ToArray());
+                default:
+                    throw new ArgumentException("Merge type must be either Add or Concatenate");
+            }
+        }
+
+        public override float[,] WeightedOutput(float[,] input)
+        {
+            _weightedOutput = Function.Add(Function.GetVectorAsMatrix(_bias, input.GetLength(1)), Function.Multiply(_weights, input));
+            return _weightedOutput;
+        }
+
+        public float[,] WeightedOutput(List<float[,]> inputs)
+        {
+            switch (_mergeType)
+            {
+                case MergeType.Add:
+                    float[,] addInput = new float[inputs[0].GetLength(0), inputs[0].GetLength(1)];
+                    foreach (float[,] input in inputs)
+                    {
+                        addInput = Function.Add(addInput, input);
+                    }
+                    return WeightedOutput(addInput);
+                case MergeType.Concatenate:
+                    return WeightedOutput(Function.RowConcatenate(inputs)); 
+                default:
+                    // Default shouldn't be checked because all calls to this method should be for merging layers.
+                    throw new ArgumentException("Merge type must be either Add or Concatenate");
+            }
+        }
+
         public override float[] ForwardPass(float[] input)
         {
             if (input.Length != _inputSize)
             {
-                // Throw some error.
+                throw new ArgumentException("Input length doesn't equal input size of layer");
             }
-
-            float[] output = new float[_inputSize];
-            output = Function.Multiply(_weights, input);
-            output = Function.Add(_bias, output);
-
-            switch (_activation)
+            float[] output = WeightedOutput(input);
+            switch (_activationType)
             {
                 case Activation.ReLU:
                     Function.Vectorise(output, Function.ReLU);
@@ -156,9 +209,9 @@ namespace Backend
                 case Activation.None:
                     Function.Vectorise(output, Function.None);
                     return output;
+                default:
+                    throw new ArgumentException("Activation must be one of the activation functions specified in the enumeration");
             }
-            // Returns output outside of switch-case so that all code paths return a value.
-            return output;
         }
 
         // Overloading ForwardPass to support a list of inputs, used when the Dense layer is merging outputs from multiple previous layers.
@@ -196,28 +249,44 @@ namespace Backend
         public override float[,] ForwardPass(float[,] inputs)
         {
             float[,] output = new float[inputs.GetLength(0),inputs.GetLength(1)];
-            output = Function.Multiply(_weights, inputs);
-            output = Function.Add(Function.GetVectorAsMatrix(_bias, inputs.GetLength(1)), output);
-            switch (_activation)
+            output = WeightedOutput(inputs);
+            switch (_activationType)
             {
                 case Activation.ReLU:
                     Function.Vectorise(output, Function.ReLU);
+                    _activationOutput = output;
                     return output;
                 case Activation.Sigmoid:
                     Function.Vectorise(output, Function.Sigmoid);
+                    _activationOutput = output;
                     return output;
                 case Activation.SiLU:
                     Function.Vectorise(output, Function.SiLU);
+                    _activationOutput = output;
                     return output;
                 case Activation.Tanh:
                     Function.Vectorise(output, Function.Tanh);
+                    _activationOutput = output;
                     return output;
                 case Activation.None:
                     Function.Vectorise(output, Function.None);
+                    _activationOutput = output;
                     return output;
+                default:
+                    throw new ArgumentException("Activation must be one of the enumerated types");
             }
-            // Returns output outside of switch-case so that all code paths return a value.
-            return output;
+        }
+
+        // These two functions GetWeightedOutput() and GetActivationOutput() get the *actual* computed values of the weighted output and activation output.
+        // This is for use in model training.
+        public float[,] GetWeightedOutput()
+        {
+            return _weightedOutput;
+        }
+
+        public float[,] GetActivationOutput()
+        {
+            return _activationOutput;
         }
 
         // Used for merge phase with mini-batch stochastic gradient descent.
@@ -236,10 +305,10 @@ namespace Backend
                     output = ForwardPass(addInput);
                     break;
                 case MergeType.Concatenate:
-                    output = ForwardPass(Function.Concatenate(inputs));
+                    output = ForwardPass(Function.RowConcatenate(inputs));
                     break;
                 default:
-                    throw new NotImplementedException();
+                    throw new ArgumentException("Merge type must be either Add or Concatenate");
                     // Default shouldn't be checked because all calls to this method should be for merging layers.
             }
             return output;

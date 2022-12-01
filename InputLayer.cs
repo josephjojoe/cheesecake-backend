@@ -34,6 +34,18 @@ namespace Backend
             return inputs;
         }
 
+        // No weights and biases, so weighted output is the same.
+        public override float[] WeightedOutput(float[] input)
+        {
+            return input;
+        }
+
+        // Override for stochastic mini-batch gradient descent.
+        public override float[,] WeightedOutput(float[,] inputs)
+        {
+            return inputs;
+        }
+
         public override int GetOutputSize()
         {
             return _inputSize;

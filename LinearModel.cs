@@ -9,9 +9,10 @@ namespace Backend
     public class LinearModel : Model
     {
         // List to hold layers -> Transfer to queue with Compile().
-        List<Layer> layers = new List<Layer>();
-        // Nullable until constructor called.
-        Queue<Layer>? queue;
+        List<Layer> _layers = new List<Layer>();
+        // Nullable until Compile() called.
+        Queue<Layer>? _queue;
+        Stack<DenseLayer>? _stack;    // We make sure that the stack only contains DenseLayer objects.
         // Boolean that indicates whether the model is ready to use and train - Compile() is a prerequisite.
         bool _readyToTrain = false;
         int _batchSize;
@@ -21,10 +22,11 @@ namespace Backend
 
         public override void AddLayer(Layer layer)
         {
-            layers.Add(layer);
+            _layers.Add(layer);
         }
 
-        public override float[] ForwardPropagate(float[] input)
+        // float[] is the output of the model, List<float[]> contains weighted inputs for each layer.
+        public override Tuple<float[], List<float[]>> ForwardPropagate(float[] input)
         {
             if (_readyToTrain == false)
             {
@@ -32,16 +34,24 @@ namespace Backend
             }
             else
             {
-                for (int i = 0; i < queue.GetQueueSize(); i++)
+                List<float[]> weightedOutputs = new List<float[]>();
+                for (int i = 0; i < _queue.GetQueueSize(); i++)
                 {
-                    input = queue.Dequeue().ForwardPass(input);
+                    Layer layer = _queue.Dequeue();
+                    if (layer is DenseLayer)    // Doesn't add InputLayer weighted output to List.
+                    {
+                        weightedOutputs.Add(layer.WeightedOutput(input));
+                        _stack.Push((DenseLayer)layer);    // Pushes layer (Dense) onto the stack for future retrieval and training.
+                    }
+                    input = layer.ForwardPass(input);
                 }
-                return input;
+                Requeue();
+                return new Tuple<float[], List<float[]>>(input, weightedOutputs);
             }
         }
 
         // Polymorphism for batched inputs.
-        public override float[,] ForwardPropagate(float[,] input)
+        public override Tuple<float[,], List<float[,]>> ForwardPropagate(float[,] input)
         {
             if (_readyToTrain == false)
             {
@@ -49,11 +59,29 @@ namespace Backend
             }
             else
             {
-                for (int i = 0; i < queue.GetQueueSize(); i++)
+                List<float[,]> weightedOutputs = new List<float[,]>();
+                for (int i = 0; i < _queue.GetQueueSize(); i++)
                 {
-                    input = queue.Dequeue().ForwardPass(input);
+                    Layer layer = _queue.Dequeue();
+                    if (layer is DenseLayer)    // Doesn't add InputLayer weighted output to List.
+                    {
+                        weightedOutputs.Add(layer.WeightedOutput(input));
+                        _stack.Push((DenseLayer)layer);
+                    }
+                    input = layer.ForwardPass(input);
                 }
-                return input;
+                Requeue();
+                return new Tuple<float[,], List<float[,]>>(input, weightedOutputs);
+            }
+        }
+
+        // Pushes layers back onto Queue for next forward propagation.
+        public void Requeue()
+        {
+            _queue.ResetPointers();
+            for (int i = 0; i < _layers.Count; i++)
+            {
+                _queue.Enqueue(_layers[i]);
             }
         }
 
@@ -61,21 +89,28 @@ namespace Backend
         {
             _costFunction = costFunction;
 
-            if (layers[0] is not InputLayer)
+            if (_layers[0] is not InputLayer)
             {
                 throw new Exception("First layer must be Input layer");
             }
-            if (layers.FindAll(s => s is InputLayer).Count > 1)
+            if (_layers.FindAll(s => s is InputLayer).Count > 1)
             {
                 throw new Exception("Only one input layer is allowed");
             }
 
-            queue = new Queue<Layer>(layers.Count());
-            foreach (Layer l in layers)
+            // Stack doesn't include InputLayer
+            _stack = new Stack<DenseLayer>(_layers.Count() - 1);
+            _queue = new Queue<Layer>(_layers.Count());
+            foreach (Layer l in _layers)
             {
-                queue.Enqueue(l);
+                _queue.Enqueue(l);
             }
             _readyToTrain = true;
+        }
+
+        public Stack<DenseLayer> GetStack()
+        {
+            return _stack;
         }
 
         public override void Train(string filename, int epochs = 10, float learningRate = 0.1f, int batchSize = 1)
@@ -84,6 +119,11 @@ namespace Backend
             {
                 throw new Exception("Model must be compiled before training");
             }
+            if (batchSize < 1)
+            {
+                throw new ArgumentException("Batch size cannot be less than 1");
+            }
+
             _epochs = epochs;
             _learningRate = learningRate;
             _batchSize = batchSize;
@@ -91,8 +131,6 @@ namespace Backend
             Optimiser.Fit(this, filename); // Implement and overload optimiser for Linear and Functional/Complex/multi-branch models.
             throw new NotImplementedException();
         }
-
-        // public override Train for reading data off a text file too.
 
         public int GetBatchSize()
         {
@@ -117,12 +155,12 @@ namespace Backend
         // Next two methods are used by the optimiser for checking that the dataset is of the correct input shape.
         public override int GetInputSize()
         {
-            return queue.Peek().GetOutputSize();
+            return _queue.Peek().GetOutputSize();
         }
 
         public override int GetOutputSize()
         {
-            return queue.PeekEnd().GetOutputSize();
+            return _queue.PeekEnd().GetOutputSize();
         }
     }
 }
