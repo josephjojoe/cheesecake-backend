@@ -10,9 +10,9 @@ namespace Backend
     {
         public abstract void AddLayer(Layer layer);
 
-        public abstract Tuple<float[], List<float[]>> ForwardPropagate(float[] input);
+        public abstract float[] ForwardPropagate(float[] input);
 
-        public abstract Tuple<float[,], List<float[,]>> ForwardPropagate(float[,] input);
+        public abstract float[,] ForwardPropagate(float[,] input);
 
         public abstract void Compile(CostFunction costFunction);
 

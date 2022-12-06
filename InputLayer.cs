@@ -16,11 +16,23 @@ namespace Backend
         // constructor, we assume a batch size of 1 which means that no shuffling and buffer system is used.
         private int _inputSize;
         private int _batchSize;
+        private float[,]? _weightedOutput;
+        private float[,]? _activationOutput;
 
         public InputLayer(int inputSize, int batchSize = 1)
         {
             _inputSize = inputSize;
             _batchSize = batchSize;
+        }
+
+        public override float[,] GetWeightedOutput()
+        {
+            return _weightedOutput;
+        }
+
+        public override float[,] GetActivationOutput()
+        {
+            return _activationOutput;
         }
 
         public override float[] ForwardPass(float[] input)
@@ -31,6 +43,8 @@ namespace Backend
         // Override for stochastic mini-batch gradient descent.
         public override float[,] ForwardPass(float[,] inputs)
         {
+            _weightedOutput = inputs;
+            _activationOutput = inputs;
             return inputs;
         }
 
@@ -49,6 +63,11 @@ namespace Backend
         public override int GetOutputSize()
         {
             return _inputSize;
+        }
+
+        public override Activation GetActivation()
+        {
+            return Activation.None;
         }
     }
 }

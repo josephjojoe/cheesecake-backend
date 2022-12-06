@@ -158,6 +158,22 @@
             return result;
         }
 
+        // Takes an (Mx1) and a (1xN) vector and gives an (MxN) matrix.
+        // In the context of my project, the column vector will be the activation from the previous layer.
+        // The row vector will be the error of the current layer.
+        public static float[,] OuterProduct(float[] columnVector, float[] rowVector)
+        {
+            float[,] result = new float[columnVector.Length, rowVector.Length];
+            for (int i = 0; i < result.GetLength(0); i++)
+            {
+                for (int j = 0; j < result.GetLength(1); j++)
+                {
+                    result[i, j] = columnVector[i] * rowVector[j];
+                }
+            }
+            return result;
+        }
+
         public static float[,] Transpose(float[,] matrix)
         {
             float[,] transpose = new float[matrix.GetLength(1), matrix.GetLength(0)];
@@ -205,8 +221,7 @@
         {
             if (array1.GetLength(1) != array2.GetLength(0))
             {
-                // Throw some error - dimensions must match.
-                Console.WriteLine("BAD BAD BAD");
+                throw new ArgumentException("Dimensions of arrays to be multiplied must match");
             }
             float[,] output = new float[array1.GetLength(0), array2.GetLength(1)];
             float temp = 0;    // Holds temporary values from matrix multiplication calculation.

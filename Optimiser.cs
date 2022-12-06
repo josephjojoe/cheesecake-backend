@@ -18,26 +18,54 @@ namespace Backend
             int epochs = model.GetEpochs();
             float learningRate = model.GetLearningRate();
 
+            List<Layer> layers = model.GetLayers();
+            layers.Reverse();
+
             for (int epoch = 0; epoch < epochs; epoch++)
             {
                 // Collects input-output sample of specified size in matrix form.
                 Tuple<float[,], float[,]> sample = data.GetData(batchSize);
+                Console.WriteLine(sample.Item1.GetLength(0));
+                Console.WriteLine(sample.Item1.GetLength(1));
+                Console.ReadLine();
 
-                Tuple<float[,], List<float[,]>> forwardPropagation = model.ForwardPropagate(sample.Item1);
-                float[,] modelOutput = forwardPropagation.Item1;
-                List<float[,]> weightedLayerOutputs = forwardPropagation.Item2;
-
-                Stack<DenseLayer> stack = model.GetStack();
-
-                float[] costGrads;
-
-                // Backpropagates errors through the network and adjusts weights and biases accordingly.
-                while (stack.IsEmpty() == false)
+                while (sample != null)
                 {
-                    DenseLayer layer = stack.Pop();
-                }
-            }
+                    List<float[,]> errors = new List<float[,]>();
+                    Console.WriteLine("You made it?");
+                    Console.ReadLine();
+                    float[,] modelOutput = model.ForwardPropagate(sample.Item1);
+                    modelOutput = model.ForwardPropagate(sample.Item1);
+                    Console.WriteLine("You made it!");
+                    Console.ReadLine();
 
+                    float costValue = ComputeCost(modelOutput, sample.Item2, model.GetCostFunction());
+
+
+                    errors.Add(ComputeFinalLayerError(model.GetCostFunction(), layers[0].GetActivation(), layers[0].GetWeightedOutput(),
+                        layers[0].GetActivationOutput(), sample.Item2));
+
+
+                    // 'layers.Count - 1' excludes the final layer (input layer) in these for loops.
+                    for (int i = 1; i < layers.Count - 1; i++)
+                    {
+                        errors.Add(ComputeLayerError(errors[i - 1], ((DenseLayer)layers[i - 1]).GetWeights(), layers[i].GetActivation(), layers[i].GetWeightedOutput()));
+                    }
+
+                    Console.WriteLine($"Amount of errors: {errors.Count}");
+                    Console.ReadLine();
+
+                    for (int i = 0; i < layers.Count - 1; i++)
+                    {
+                        // Previous layer is layers[i + 1] as the list of layers has been reversed.
+                        ModifyWeightsAndBiases(errors[i], (DenseLayer)layers[i], layers[i + 1], learningRate);
+                    }
+
+                    // sample = data.GetData(batchSize);
+                }
+                // Resets index pointer so that data can be used in next epoch for training.
+                data.ResetDatabase();
+            }
         }
 
         //public static void Fit(ComplexModel model, string filename)
@@ -133,11 +161,12 @@ namespace Backend
             return costGrads;
         }
 
-        public static float[,] ComputeFinalLayerError(CostFunction cost, Activation finalLayerActivation, float[,] finalLayerOutput, float[,] expected)
+        public static float[,] ComputeFinalLayerError(CostFunction cost, Activation finalLayerActivationFunction, float[,] finalLayerWeightedOutput,
+                                                      float[,] finalLayerActivationOutput,float[,] expected)
         {
-            float[,] nablaAC = ComputeCostGrads(finalLayerOutput, expected, cost);
-            float[,] sigmaPrimeWeightedOutput = finalLayerOutput;
-            switch (finalLayerActivation)
+            float[,] nablaAC = ComputeCostGrads(finalLayerActivationOutput, expected, cost);
+            float[,] sigmaPrimeWeightedOutput = finalLayerWeightedOutput;
+            switch (finalLayerActivationFunction)
             {
                 case Activation.ReLU:
                     Function.Vectorise(sigmaPrimeWeightedOutput, Function.ReLUDerivative);
@@ -160,9 +189,56 @@ namespace Backend
             return Function.HadamardProduct(nablaAC, sigmaPrimeWeightedOutput);
         }
 
-        public static float[,] ComputeLayerError(DenseLayer layer)
+        public static float[,] ComputeLayerError(float[,] followingLayerError, float[,] followingLayerWeights, Activation layerActivation, float[,] layerWeightedOutput)
         {
+            float[,] errorComponentOne = Function.Multiply(Function.Transpose(followingLayerWeights), followingLayerError);
+            float[,] errorComponentTwo = layerWeightedOutput;
+            switch (layerActivation)
+            {
+                case Activation.ReLU:
+                    Function.Vectorise(errorComponentTwo, Function.ReLUDerivative);
+                    break;
+                case Activation.Sigmoid:
+                    Function.Vectorise(errorComponentTwo, Function.SigmoidDerivative);
+                    break;
+                case Activation.Tanh:
+                    Function.Vectorise(errorComponentTwo, Function.TanhDerivative);
+                    break;
+                case Activation.SiLU:
+                    Function.Vectorise(errorComponentTwo, Function.SiLUDerivative);
+                    break;
+                case Activation.None:
+                    Function.Vectorise(errorComponentTwo, Function.NoneDerivative);
+                    break;
+                default:
+                    throw new ArgumentException("Activation must be one of the specified enumeration values");
+            }
+            return Function.HadamardProduct(errorComponentOne, errorComponentTwo);
+        }
 
+        public static void ModifyWeightsAndBiases(float[,] error, DenseLayer layer, Layer previousLayer, float eta)
+        {
+            ModifyBiases(error, layer, eta);
+            // ModifyWeights(error, layer, previousLayer, eta);
+        }
+
+        public static void ModifyBiases(float[,] error, DenseLayer layer, float eta)
+        {
+            float[] averagedError = Function.AverageMatrix(error);
+            Function.Vectorise(averagedError, x => eta * x);
+            // Adds error * eta (learning rate) to the biases to improve them.
+            layer.ModifyBias(averagedError);
+        }
+
+        public static void ModifyWeights(float[,] error, DenseLayer layer, Layer previousLayer, float eta)
+        {
+            float[] averagedActivation = Function.AverageMatrix(previousLayer.GetActivationOutput());
+            float[] averagedError = Function.AverageMatrix(error);
+            float[,] modification = Function.Transpose(Function.OuterProduct(averagedActivation, averagedError));
+
+            // Multiplies by eta (learning rate) then adds to weights to improve them.
+            Function.Vectorise(modification, x => eta * x);
+            layer.ModifyWeights(modification);
         }
     }
 }

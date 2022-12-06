@@ -12,7 +12,6 @@ namespace Backend
         List<Layer> _layers = new List<Layer>();
         // Nullable until Compile() called.
         Queue<Layer>? _queue;
-        Stack<DenseLayer>? _stack;    // We make sure that the stack only contains DenseLayer objects.
         // Boolean that indicates whether the model is ready to use and train - Compile() is a prerequisite.
         bool _readyToTrain = false;
         int _batchSize;
@@ -25,8 +24,13 @@ namespace Backend
             _layers.Add(layer);
         }
 
-        // float[] is the output of the model, List<float[]> contains weighted inputs for each layer.
-        public override Tuple<float[], List<float[]>> ForwardPropagate(float[] input)
+        public List<Layer> GetLayers()
+        {
+            return _layers;
+        }
+
+        // float[] is the output of the model.
+        public override float[] ForwardPropagate(float[] input)
         {
             if (_readyToTrain == false)
             {
@@ -34,24 +38,18 @@ namespace Backend
             }
             else
             {
-                List<float[]> weightedOutputs = new List<float[]>();
                 for (int i = 0; i < _queue.GetQueueSize(); i++)
                 {
                     Layer layer = _queue.Dequeue();
-                    if (layer is DenseLayer)    // Doesn't add InputLayer weighted output to List.
-                    {
-                        weightedOutputs.Add(layer.WeightedOutput(input));
-                        _stack.Push((DenseLayer)layer);    // Pushes layer (Dense) onto the stack for future retrieval and training.
-                    }
                     input = layer.ForwardPass(input);
                 }
                 Requeue();
-                return new Tuple<float[], List<float[]>>(input, weightedOutputs);
+                return input;
             }
         }
 
         // Polymorphism for batched inputs.
-        public override Tuple<float[,], List<float[,]>> ForwardPropagate(float[,] input)
+        public override float[,] ForwardPropagate(float[,] input)
         {
             if (_readyToTrain == false)
             {
@@ -59,19 +57,13 @@ namespace Backend
             }
             else
             {
-                List<float[,]> weightedOutputs = new List<float[,]>();
                 for (int i = 0; i < _queue.GetQueueSize(); i++)
                 {
                     Layer layer = _queue.Dequeue();
-                    if (layer is DenseLayer)    // Doesn't add InputLayer weighted output to List.
-                    {
-                        weightedOutputs.Add(layer.WeightedOutput(input));
-                        _stack.Push((DenseLayer)layer);
-                    }
                     input = layer.ForwardPass(input);
                 }
                 Requeue();
-                return new Tuple<float[,], List<float[,]>>(input, weightedOutputs);
+                return input;
             }
         }
 
@@ -98,19 +90,12 @@ namespace Backend
                 throw new Exception("Only one input layer is allowed");
             }
 
-            // Stack doesn't include InputLayer
-            _stack = new Stack<DenseLayer>(_layers.Count() - 1);
             _queue = new Queue<Layer>(_layers.Count());
             foreach (Layer l in _layers)
             {
                 _queue.Enqueue(l);
             }
             _readyToTrain = true;
-        }
-
-        public Stack<DenseLayer> GetStack()
-        {
-            return _stack;
         }
 
         public override void Train(string filename, int epochs = 10, float learningRate = 0.1f, int batchSize = 1)
@@ -128,8 +113,7 @@ namespace Backend
             _learningRate = learningRate;
             _batchSize = batchSize;
 
-            Optimiser.Fit(this, filename); // Implement and overload optimiser for Linear and Functional/Complex/multi-branch models.
-            throw new NotImplementedException();
+            Optimiser.Fit(this, filename);
         }
 
         public int GetBatchSize()

@@ -16,10 +16,11 @@ namespace Backend
         //
         // on each line. They should all also already be in numerical form and
         // normalised if appropriate/necessary to do so.
-        public static Tuple<float[][], float[][]> ExtractDataset(string filename, int inputFeatureSize, int outputFeatureSize)
+
+        public static Tuple<List<float[]>, List<float[]>> ExtractDataset(string filename, int inputFeatureSize, int outputFeatureSize)
         {
-            float[][] inputs = new float[inputFeatureSize][];
-            float[][] outputs = new float[outputFeatureSize][];
+            List<float[]> inputs = new List<float[]>();
+            List<float[]> outputs = new List<float[]>();
 
             if (!filename.EndsWith(".txt"))
             {
@@ -33,7 +34,6 @@ namespace Backend
                 float[] output;
                 string receivedInputs;
                 string receivedOutputs;
-                int i = 0;
                 while ((line = reader.ReadLine()) != null)
                 {
                     receivedInputs = line.Split('|')[0];
@@ -47,12 +47,18 @@ namespace Backend
                         throw new Exception("Dataset inputs/outputs length didn't match specified inputs/outputs length");
                     }
 
-                    inputs[i] = input;
-                    outputs[i] = output;
-                    i++;
+                    try
+                    {
+                        inputs.Add(input);
+                        outputs.Add(output);
+                    }
+                    catch
+                    {
+                        break;
+                    }
                 }
             }
-            return new Tuple<float[][], float[][]>(inputs, outputs);
+            return new Tuple<List<float[]>, List<float[]>>(inputs, outputs);
         }
     }
 }

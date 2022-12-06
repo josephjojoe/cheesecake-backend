@@ -9,7 +9,7 @@ namespace Backend
     public class Dataset
     {
         string _filepath;
-        Tuple<float[][], float[][]> _dataset;
+        Tuple<List<float[]>, List<float[]>> _dataset;
         int _index = 0;
         int _datasetSize;
 
@@ -17,7 +17,7 @@ namespace Backend
         {
             _filepath = filepath;
             _dataset = Data.ExtractDataset(filepath, inputFeatureSize, outputFeatureSize);
-            _datasetSize = _dataset.Item1.Length;    // Equal to _dataset.Item2.Length
+            _datasetSize = _dataset.Item1.Count;
         }
 
         // Returns a single input-output pair.
@@ -57,6 +57,12 @@ namespace Backend
                 }
             }
             return new Tuple<float[,], float[,]>(Function.ConcatenateVectorsIntoMatrix(inputs), Function.ConcatenateVectorsIntoMatrix(outputs));
+        }
+
+        // Resets database/index pointer so that more samples can be received for further epochs.
+        public void ResetDatabase()
+        {
+            _index = 0;
         }
     }
 }

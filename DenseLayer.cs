@@ -81,7 +81,7 @@ namespace Backend
             return _units;
         }
 
-        public Activation GetActivation()
+        public override Activation GetActivation()
         {
             return _activationType;
         }
@@ -162,8 +162,9 @@ namespace Backend
 
         public override float[,] WeightedOutput(float[,] input)
         {
-            _weightedOutput = Function.Add(Function.GetVectorAsMatrix(_bias, input.GetLength(1)), Function.Multiply(_weights, input));
-            return _weightedOutput;
+            float[,]  weightedOutput = Function.Add(Function.GetVectorAsMatrix(_bias, input.GetLength(1)), Function.Multiply(_weights, input));
+            SetWeightedOutput(weightedOutput);
+            return weightedOutput;
         }
 
         public float[,] WeightedOutput(List<float[,]> inputs)
@@ -254,39 +255,24 @@ namespace Backend
             {
                 case Activation.ReLU:
                     Function.Vectorise(output, Function.ReLU);
-                    _activationOutput = output;
-                    return output;
+                    break;
                 case Activation.Sigmoid:
                     Function.Vectorise(output, Function.Sigmoid);
-                    _activationOutput = output;
-                    return output;
+                    break;
                 case Activation.SiLU:
                     Function.Vectorise(output, Function.SiLU);
-                    _activationOutput = output;
-                    return output;
+                    break;
                 case Activation.Tanh:
                     Function.Vectorise(output, Function.Tanh);
-                    _activationOutput = output;
-                    return output;
+                    break;
                 case Activation.None:
                     Function.Vectorise(output, Function.None);
-                    _activationOutput = output;
-                    return output;
+                    break;
                 default:
                     throw new ArgumentException("Activation must be one of the enumerated types");
             }
-        }
-
-        // These two functions GetWeightedOutput() and GetActivationOutput() get the *actual* computed values of the weighted output and activation output.
-        // This is for use in model training.
-        public float[,] GetWeightedOutput()
-        {
-            return _weightedOutput;
-        }
-
-        public float[,] GetActivationOutput()
-        {
-            return _activationOutput;
+            SetActivationOutput(output);
+            return output;
         }
 
         // Used for merge phase with mini-batch stochastic gradient descent.
@@ -312,6 +298,28 @@ namespace Backend
                     // Default shouldn't be checked because all calls to this method should be for merging layers.
             }
             return output;
+        }
+
+        // These two functions GetWeightedOutput() and GetActivationOutput() get the *actual* computed values of the weighted output and activation output.
+        // This is for use in model training.
+        public override float[,] GetWeightedOutput()
+        {
+            return _weightedOutput;
+        }
+
+        public override float[,] GetActivationOutput()
+        {
+            return _activationOutput;
+        }
+
+        public void SetWeightedOutput(float[,] weightedOutput)
+        {
+            _weightedOutput = weightedOutput;
+        }
+
+        public void SetActivationOutput(float[,] activationOutput)
+        {
+            _activationOutput = activationOutput;
         }
 
         public void ModifyWeights(float[,] modification)
