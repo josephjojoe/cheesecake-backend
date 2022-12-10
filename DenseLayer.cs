@@ -162,6 +162,7 @@ namespace Backend
 
         public override float[,] WeightedOutput(float[,] input)
         {
+            float[,] testWeights = this.GetWeights();
             float[,]  weightedOutput = Function.Add(Function.GetVectorAsMatrix(_bias, input.GetLength(1)), Function.Multiply(_weights, input));
             SetWeightedOutput(weightedOutput);
             return weightedOutput;

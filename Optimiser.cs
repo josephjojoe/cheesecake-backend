@@ -19,49 +19,46 @@ namespace Backend
             float learningRate = model.GetLearningRate();
 
             List<Layer> layers = model.GetLayers();
-            layers.Reverse();
 
             for (int epoch = 0; epoch < epochs; epoch++)
             {
                 // Collects input-output sample of specified size in matrix form.
                 Tuple<float[,], float[,]> sample = data.GetData(batchSize);
-                Console.WriteLine(sample.Item1.GetLength(0));
-                Console.WriteLine(sample.Item1.GetLength(1));
-                Console.ReadLine();
 
                 while (sample != null)
                 {
+                    if (sample.Item1.Length == 0)
+                    {
+                        break;
+                    }
+
                     List<float[,]> errors = new List<float[,]>();
-                    Console.WriteLine("You made it?");
-                    Console.ReadLine();
                     float[,] modelOutput = model.ForwardPropagate(sample.Item1);
-                    modelOutput = model.ForwardPropagate(sample.Item1);
-                    Console.WriteLine("You made it!");
-                    Console.ReadLine();
+
 
                     float costValue = ComputeCost(modelOutput, sample.Item2, model.GetCostFunction());
+                    Console.WriteLine(costValue);
 
 
-                    errors.Add(ComputeFinalLayerError(model.GetCostFunction(), layers[0].GetActivation(), layers[0].GetWeightedOutput(),
-                        layers[0].GetActivationOutput(), sample.Item2));
+                    errors.Add(ComputeFinalLayerError(model.GetCostFunction(), layers[layers.Count - 1].GetActivation(),
+                        layers[layers.Count - 1].GetWeightedOutput(), layers[layers.Count - 1].GetActivationOutput(), sample.Item2));
 
-
-                    // 'layers.Count - 1' excludes the final layer (input layer) in these for loops.
-                    for (int i = 1; i < layers.Count - 1; i++)
+                    for (int i = layers.Count - 2; i > 1; i--)
                     {
-                        errors.Add(ComputeLayerError(errors[i - 1], ((DenseLayer)layers[i - 1]).GetWeights(), layers[i].GetActivation(), layers[i].GetWeightedOutput()));
+                        errors.Add(ComputeLayerError(errors[i + 1], ((DenseLayer)layers[i + 1]).GetWeights(), layers[i].GetActivation(), layers[i].GetWeightedOutput()));
                     }
 
-                    Console.WriteLine($"Amount of errors: {errors.Count}");
-                    Console.ReadLine();
-
-                    for (int i = 0; i < layers.Count - 1; i++)
+                    
+                    for (int i = layers.Count - 2; i > 1; i--)
                     {
-                        // Previous layer is layers[i + 1] as the list of layers has been reversed.
-                        ModifyWeightsAndBiases(errors[i], (DenseLayer)layers[i], layers[i + 1], learningRate);
+                        // Check below line - is errors[i] the correct indexing? First error in errors[] is the error in the final layer,
+                        // first layer in layers[] is the input layer.
+                        // ModifyWeightsAndBiases(errors[i], (DenseLayer)layers[i], layers[i - 1], learningRate);
                     }
 
-                    // sample = data.GetData(batchSize);
+
+
+                    sample = data.GetData(batchSize);
                 }
                 // Resets index pointer so that data can be used in next epoch for training.
                 data.ResetDatabase();
@@ -219,7 +216,7 @@ namespace Backend
         public static void ModifyWeightsAndBiases(float[,] error, DenseLayer layer, Layer previousLayer, float eta)
         {
             ModifyBiases(error, layer, eta);
-            // ModifyWeights(error, layer, previousLayer, eta);
+            ModifyWeights(error, layer, previousLayer, eta);
         }
 
         public static void ModifyBiases(float[,] error, DenseLayer layer, float eta)

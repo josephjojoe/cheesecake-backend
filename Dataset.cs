@@ -53,6 +53,10 @@ namespace Backend
                     // Executed when there is no more data left in the dataset to extract.
                     // This will be a common occurence as it is rare that batch size perfectly divides dataset size.
                     // We do not throw an exception, we simply return what we have.
+                    if (inputs.Count == 0 || outputs.Count == 0)
+                    {
+                        return null;
+                    }
                     return new Tuple<float[,], float[,]>(Function.ConcatenateVectorsIntoMatrix(inputs), Function.ConcatenateVectorsIntoMatrix(outputs));
                 }
             }
