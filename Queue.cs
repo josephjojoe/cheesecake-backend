@@ -73,5 +73,10 @@ namespace Backend
             headPointer = 0;
             tailPointer = -1;
         }
+
+        public void ResetHeadPointer()
+        {
+            headPointer = 0;
+        }
     }
 }

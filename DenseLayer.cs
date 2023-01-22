@@ -325,7 +325,7 @@ namespace Backend
 
         public void ModifyWeights(float[,] modification)
         {
-            Function.Add(_weights, modification);
+            _weights = Function.Add(_weights, modification);
         }
 
         public float[,] GetWeights()
@@ -340,7 +340,7 @@ namespace Backend
 
         public void ModifyBias(float[] modification)
         {
-            Function.Add(_bias, modification);
+            _bias = Function.Add(_bias, modification);
         }
 
         public float[] GetBias()

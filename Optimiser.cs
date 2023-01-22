@@ -18,12 +18,13 @@ namespace Backend
             int epochs = model.GetEpochs();
             float learningRate = model.GetLearningRate();
 
-            List<Layer> layers = model.GetLayers();
-
             for (int epoch = 0; epoch < epochs; epoch++)
             {
                 // Collects input-output sample of specified size in matrix form.
                 Tuple<float[,], float[,]> sample = data.GetData(batchSize);
+
+                // List to hold costs - displays average at the end of each epoch.
+                List<float> costs = new List<float>();
 
                 while (sample != null)
                 {
@@ -35,31 +36,25 @@ namespace Backend
                     List<float[,]> errors = new List<float[,]>();
                     float[,] modelOutput = model.ForwardPropagate(sample.Item1);
 
+                    List<Layer> layers = model.GetLayers();
 
                     float costValue = ComputeCost(modelOutput, sample.Item2, model.GetCostFunction());
-                    Console.WriteLine(costValue);
-
+                    costs.Add(costValue);
 
                     errors.Add(ComputeFinalLayerError(model.GetCostFunction(), layers[layers.Count - 1].GetActivation(),
                         layers[layers.Count - 1].GetWeightedOutput(), layers[layers.Count - 1].GetActivationOutput(), sample.Item2));
 
-                    for (int i = layers.Count - 2; i > 1; i--)
+                    for (int i = layers.Count - 2; i > 0; i--)
                     {
-                        errors.Add(ComputeLayerError(errors[i + 1], ((DenseLayer)layers[i + 1]).GetWeights(), layers[i].GetActivation(), layers[i].GetWeightedOutput()));
+                        errors.Add(ComputeLayerError(errors[layers.Count - 2 - i], ((DenseLayer)layers[i + 1]).GetWeights(), layers[i].GetActivation(), layers[i].GetWeightedOutput()));
                     }
 
-                    
-                    for (int i = layers.Count - 2; i > 1; i--)
-                    {
-                        // Check below line - is errors[i] the correct indexing? First error in errors[] is the error in the final layer,
-                        // first layer in layers[] is the input layer.
-                        // ModifyWeightsAndBiases(errors[i], (DenseLayer)layers[i], layers[i - 1], learningRate);
-                    }
-
-
-
+                    model.TrainingStep(errors);
                     sample = data.GetData(batchSize);
                 }
+
+                // Displays cost.
+                Console.WriteLine($"Epoch {epoch} cost: {costs.Sum() / costs.Count}");
                 // Resets index pointer so that data can be used in next epoch for training.
                 data.ResetDatabase();
             }
@@ -211,31 +206,6 @@ namespace Backend
                     throw new ArgumentException("Activation must be one of the specified enumeration values");
             }
             return Function.HadamardProduct(errorComponentOne, errorComponentTwo);
-        }
-
-        public static void ModifyWeightsAndBiases(float[,] error, DenseLayer layer, Layer previousLayer, float eta)
-        {
-            ModifyBiases(error, layer, eta);
-            ModifyWeights(error, layer, previousLayer, eta);
-        }
-
-        public static void ModifyBiases(float[,] error, DenseLayer layer, float eta)
-        {
-            float[] averagedError = Function.AverageMatrix(error);
-            Function.Vectorise(averagedError, x => eta * x);
-            // Adds error * eta (learning rate) to the biases to improve them.
-            layer.ModifyBias(averagedError);
-        }
-
-        public static void ModifyWeights(float[,] error, DenseLayer layer, Layer previousLayer, float eta)
-        {
-            float[] averagedActivation = Function.AverageMatrix(previousLayer.GetActivationOutput());
-            float[] averagedError = Function.AverageMatrix(error);
-            float[,] modification = Function.Transpose(Function.OuterProduct(averagedActivation, averagedError));
-
-            // Multiplies by eta (learning rate) then adds to weights to improve them.
-            Function.Vectorise(modification, x => eta * x);
-            layer.ModifyWeights(modification);
         }
     }
 }

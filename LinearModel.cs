@@ -48,6 +48,41 @@ namespace Backend
             }
         }
 
+        // Uses the errors generated in backpropagation to change the model's weights and biases.
+        public void TrainingStep(List<float[,]> errors)
+        {
+            // Okay this loop isn't executing for some reason.
+            // Okay the reason is that errors doesn't have all the errors computed for some reason.
+            for (int i = _layers.Count - 1; i > 0; i--)
+            {
+                ModifyWeightsAndBiases(errors[_layers.Count - 1 - i], (DenseLayer)_layers[i], _layers[i - 1], _learningRate);
+            }
+            float[,] newWeights = ((DenseLayer)_layers[1]).GetWeights();
+
+            // Pushes trained layer attributes onto queue for future forward passes.
+            Requeue();
+        }
+
+        // Code to modify the weights and biases based on the errors generated in backpropagation.
+        public static void ModifyWeightsAndBiases(float[,] error, DenseLayer layer, Layer previousLayer, float eta)
+        {
+            float[] averagedError = Function.AverageMatrix(error);
+
+            // For gradient descent, we are multiplying eta by -1 so that we go against the direction of steepest ascent.
+            // For gradient ascent, we would omit multiplying eta by -1.
+            eta = eta * -1;
+
+            Function.Vectorise(averagedError, x => eta * x);
+            // Adds error * eta (learning rate) to the biases to improve them. Eta means that not overly large steps are made.
+            layer.ModifyBias(averagedError);
+
+            float[] averagedActivation = Function.AverageMatrix(previousLayer.GetActivationOutput());
+            float[,] modification = Function.Transpose(Function.OuterProduct(averagedActivation, averagedError));
+            // Multiplies by eta (learning rate) then adds to weights to improve them.
+            Function.Vectorise(modification, x => eta * x);
+            layer.ModifyWeights(modification);
+        }
+
         // Polymorphism for batched inputs.
         public override float[,] ForwardPropagate(float[,] input)
         {

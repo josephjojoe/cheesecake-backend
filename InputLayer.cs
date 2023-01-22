@@ -12,17 +12,13 @@ namespace Backend
     public class InputLayer : Layer
     {
         // Input size is also referred to as 'shape' in other libraries - it allows other layer input/output shapes to be determined.
-        // Batch size is only used for stochastic mini-batch gradient descent in this project; if not supplied to the
-        // constructor, we assume a batch size of 1 which means that no shuffling and buffer system is used.
         private int _inputSize;
-        private int _batchSize;
         private float[,]? _weightedOutput;
         private float[,]? _activationOutput;
 
-        public InputLayer(int inputSize, int batchSize = 1)
+        public InputLayer(int inputSize)
         {
             _inputSize = inputSize;
-            _batchSize = batchSize;
         }
 
         public override float[,] GetWeightedOutput()
