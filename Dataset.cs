@@ -27,7 +27,7 @@ namespace Backend
             return new Tuple<float[], float[]>(_dataset.Item1[_index - 1], _dataset.Item2[_index - 1]);
         }
 
-        // Returns multiple input-output pairs packaged as vectors.
+        // Returns multiple input-output pairs packaged as matrices.
         public Tuple<float[,], float[,]> GetData(int batchSize)
         {
             if (batchSize > _datasetSize)

@@ -8,6 +8,9 @@ namespace Backend
 {
     public abstract class Model
     {
+        // NOTE: Both Linear and Complex models will implement AddLayer(), but it hasn't been included as an abstract method here.
+        // This is because Linear and Complex models will implement the function with different parameters leading to a differing
+        // method signature.
         public abstract void AddLayer(Layer layer);
 
         public abstract float[] ForwardPropagate(float[] input);
