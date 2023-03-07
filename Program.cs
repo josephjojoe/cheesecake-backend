@@ -43,44 +43,27 @@
                                                       WeightInitialisation.Random, BiasInitialisation.Random,
                                                       previousLayers: new List<Layer>() { dense_stack1_2, dense_stack2_3 }, MergeType.Concatenate);
 
-            DirectedAcyclicGraph graph = new DirectedAcyclicGraph();
+            ComplexModel model = new ComplexModel();
+            model.AddInputLayer(input);
+            model.AddLayer(input, dense);
+            model.AddLayer(dense, dense2);
 
-            graph.AddInputNode(input);
-            graph.AddConnection(input, dense);
-            graph.AddConnection(dense, dense2);
+            model.AddLayer(dense2, dense_stack1_1);
+            model.AddLayer(dense_stack1_1, dense_stack1_2);
 
-            graph.TopologicalSort();
-            graph.TopologicalSort();
-            List<Layer> traverseOrder = graph.GetTopologicalSort();
+            model.AddLayer(dense2, dense_stack2_1);
+            model.AddLayer(dense_stack2_1, dense_stack2_2);
+            model.AddLayer(dense_stack2_2, dense_stack2_3);
 
-            Console.WriteLine($"Number of nodes in traversal: {traverseOrder.Count}");
-            Console.WriteLine($"Number of units in each layer to test traversal order:");
-            for (int i = 0; i < traverseOrder.Count; i++)
+            model.AddLayer(dense_stack1_2, dense_merge_1);
+            model.AddLayer(dense_stack2_3, dense_merge_1);
+
+            float[] inputdata = new float[1] { 6.7f };
+            float[] output = model.ForwardPropagate(inputdata);
+            foreach (float a in output)
             {
-                Console.WriteLine(traverseOrder[i].GetOutputSize());
+                Console.WriteLine(a);
             }
-            Console.ReadLine();
-
-            graph.AddConnection(dense2, dense_stack1_1);
-            graph.AddConnection(dense_stack1_1, dense_stack1_2);
-
-            graph.AddConnection(dense2, dense_stack2_1);
-            graph.AddConnection(dense_stack2_1, dense_stack2_2);
-            graph.AddConnection(dense_stack2_2, dense_stack2_3);
-
-            graph.AddConnection(dense_stack1_2, dense_merge_1);
-            graph.AddConnection(dense_stack2_3, dense_merge_1);
-
-            graph.TopologicalSort();
-            traverseOrder = graph.GetTopologicalSort();
-
-            Console.WriteLine($"Number of nodes in traversal: {traverseOrder.Count}");
-            Console.WriteLine($"Number of units in each layer to test traversal order:");
-            for (int i = 0; i < traverseOrder.Count; i++)
-            {
-                Console.WriteLine(traverseOrder[i].GetOutputSize());
-            }
-            Console.ReadLine();
         }
     }
 }

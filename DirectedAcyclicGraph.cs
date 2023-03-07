@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace Backend
 {
@@ -12,7 +13,6 @@ namespace Backend
     // We utilise the adjacency list approach and store connections as key-value sender-receiver pairs, e.g. {input_layer: dense_layer_1}.
     public class DirectedAcyclicGraph
     {
-        // Nullable because layers will only be added once AddLayer() in ComplexModel is called.
         // Topology of layers and a list of layers that the layer connects to.
         Dictionary<Layer, List<Layer>> _topology = new Dictionary<Layer, List<Layer>>();
         // List corresponding to the topological sort order in which layers should be accessed during the forward pass.
@@ -54,15 +54,21 @@ namespace Backend
                 }
             }
             // Dynamically updates traversal order as new nodes are added.
-            // TopologicalSort();
+            TopologicalSort();
         }
 
         public void TopologicalSort()
         {
-            Dictionary<Layer, List<Layer>> topology = _topology;
+            Dictionary<Layer, List<Layer>> topology = new Dictionary<Layer, List<Layer>>();
+
+            foreach (KeyValuePair<Layer, List<Layer>> entry in _topology)
+            {
+                topology.Add(entry.Key, entry.Value);
+            }
 
             // Implementation of Kahn's topological sort algorithm.
-            // Provides a linearisation of the graph topology (order in which each layer should be visited during the forward pass)
+            // Provides a linearisation of the graph topology
+            // (the order in which each layer should be visited during the forward pass)
             // and conveniently checks that the graph is acyclic during execution.
             List<Layer> L = new List<Layer>();
             List<Layer> S = GetStartNodes(topology);

@@ -60,10 +60,18 @@ namespace Backend
             }
         }
 
-        //public static void Fit(ComplexModel model, string filename)
-        //{
-        //
-        //}
+        public static void Fit(ComplexModel model, string filename)
+        {
+            // Collecting dataset which the model is trained upon.
+            Dataset data = new Dataset(filename, model.GetInputSize(), model.GetOutputSize());
+
+            int batchSize = model.GetBatchSize();
+            CostFunction cost = model.GetCostFunction();
+            int epochs = model.GetEpochs();
+            float learningRate = model.GetLearningRate();
+
+            throw new NotImplementedException();
+        }
 
         // Generic wrapper function for the cost function implementations.
         public static float ComputeCost(float[] prediction, float[] expected, CostFunction cost)
