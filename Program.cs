@@ -24,23 +24,23 @@
 
             InputLayer input = new InputLayer(1);
 
-            DenseLayer dense = new DenseLayer(2, Activation.Sigmoid, WeightInitialisation.Random, BiasInitialisation.Random, input);
-            DenseLayer dense2 = new DenseLayer(3, Activation.Sigmoid, WeightInitialisation.Random, BiasInitialisation.Random, dense);
+            DenseLayer dense = new DenseLayer(2, Activation.Sigmoid, WeightInitialisation.Xavier, BiasInitialisation.Xavier, input);
+            DenseLayer dense2 = new DenseLayer(3, Activation.Sigmoid, WeightInitialisation.Xavier, BiasInitialisation.Xavier, dense);
 
             DenseLayer dense_stack1_1 = new DenseLayer(4, Activation.Sigmoid,
-                                                       WeightInitialisation.Random, BiasInitialisation.Random, dense2);
+                                                       WeightInitialisation.Xavier, BiasInitialisation.Xavier, dense2);
             DenseLayer dense_stack1_2 = new DenseLayer(5, Activation.Sigmoid,
-                                                       WeightInitialisation.Random, BiasInitialisation.Random, dense_stack1_1);
+                                                       WeightInitialisation.Xavier, BiasInitialisation.Xavier, dense_stack1_1);
 
             DenseLayer dense_stack2_1 = new DenseLayer(6, Activation.Sigmoid,
-                                                       WeightInitialisation.Random, BiasInitialisation.Random, dense2);
+                                                       WeightInitialisation.Xavier, BiasInitialisation.Xavier, dense2);
             DenseLayer dense_stack2_2 = new DenseLayer(7, Activation.Sigmoid,
-                                                       WeightInitialisation.Random, BiasInitialisation.Random, dense_stack2_1);
+                                                       WeightInitialisation.Xavier, BiasInitialisation.Xavier, dense_stack2_1);
             DenseLayer dense_stack2_3 = new DenseLayer(8, Activation.Sigmoid,
-                                                       WeightInitialisation.Random, BiasInitialisation.Random, dense_stack2_2);
+                                                       WeightInitialisation.Xavier, BiasInitialisation.Xavier, dense_stack2_2);
 
             DenseLayer dense_merge_1 = new DenseLayer(9, Activation.Sigmoid,
-                                                      WeightInitialisation.Random, BiasInitialisation.Random,
+                                                      WeightInitialisation.Xavier, BiasInitialisation.Xavier,
                                                       previousLayers: new List<Layer>() { dense_stack1_2, dense_stack2_3 }, MergeType.Concatenate);
 
             ComplexModel model = new ComplexModel();
@@ -58,12 +58,25 @@
             model.AddLayer(dense_stack1_2, dense_merge_1);
             model.AddLayer(dense_stack2_3, dense_merge_1);
 
-            float[] inputdata = new float[1] { 6.7f };
-            float[] output = model.ForwardPropagate(inputdata);
-            foreach (float a in output)
+            model.Compile(CostFunction.MSE);
+
+            // Input data must be batched as 2d matrices.
+            float[,] inputdata = new float[1, 1];
+            inputdata[0, 0] = 6.7f;
+            float[,] output = model.ForwardPropagate(inputdata);
+
+            Console.WriteLine(output.GetLength(0));
+            Console.WriteLine(output.GetLength(1));
+
+            for (int i = 0; i < output.GetLength(0); i++)
             {
-                Console.WriteLine(a);
+                for (int j = 0; j < output.GetLength(1); j++)
+                {
+                    Console.WriteLine(output[i, j]);
+                }
             }
+
+            Console.ReadLine();
         }
     }
 }

@@ -47,40 +47,38 @@ namespace Backend
             return graph.GetTopologicalSort().Last().GetOutputSize();
         }
 
-        // This isn't how forward propagate works in complex models!!!
-        public override float[] ForwardPropagate(float[] input)
+        public override float[,] ForwardPropagate(float[,] inputs)
         {
-            List<Layer> order = graph.GetTopologicalSort();
-            foreach (Layer layer in order)
+            if (_readyToTrain == false)
             {
-                input = layer.ForwardPass(input);
+                throw new Exception("Model must be compiled before training");
             }
-            return input;
-        }
-
-        // This also isn't how forward propagate works in complex models!!!
-        public override float[,] ForwardPropagate(float[,] input)
-        {
             List<Layer> order = graph.GetTopologicalSort();
-            foreach (Layer layer in order)
+            // Sets up activation output on first layer (the input layer).
+            inputs = order[0].ForwardPass(inputs);
+            // Starts from 1 as we are excluding an explicit ForwardPass call on the first layer (the input layer).
+            for (int i = 1; i < order.Count; i++)
             {
-                input = layer.ForwardPass(input);
+                // Collects inputs from incoming layers.
+                List<Layer> incomingLayers = graph.GetIncomingNodes(graph.GetTopology(), order[i]);
+                List<float[,]> incomingInputs = new List<float[,]>();
+                foreach (Layer l in incomingLayers)
+                {
+                    incomingInputs.Add(l.GetActivationOutput());
+                }
+                DenseLayer denseLayer = (DenseLayer)order[i];
+                // Updates activation output for layers as we traverse the graph.
+                float[,] output = denseLayer.ForwardPass(incomingInputs);
             }
-            return input;
+            // Model output is the activation output of the final layer.
+            DenseLayer outputLayer = (DenseLayer)order.Last();
+            return outputLayer.GetActivationOutput();
         }
 
         public override void Compile(CostFunction costFunction)
         {
             _costFunction = costFunction;
             _readyToTrain = true;
-        }
-
-        public override void Train(string filename, int epochs, float learningRate, int batchSize)
-        {
-            _epochs = epochs;
-            _learningRate = learningRate;
-            _batchSize = batchSize;
-            Optimiser.Fit(this, filename);
         }
 
         public Dictionary<Layer, List<Layer>> GetTopology()

@@ -60,7 +60,7 @@ namespace Backend
         }
 
         // float[] is the output of the model.
-        public override float[] ForwardPropagate(float[] input)
+        public float[] ForwardPropagate(float[] input)
         {
             if (_readyToTrain == false)
             {
@@ -128,7 +128,7 @@ namespace Backend
             _readyToTrain = true;
         }
 
-        public override void Train(string filename, int epochs, float learningRate, int batchSize)
+        public void Train(string filename, int epochs, float learningRate, int batchSize)
         {
             if (_readyToTrain == false)
             {

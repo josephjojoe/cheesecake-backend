@@ -110,7 +110,7 @@ namespace Backend
 
         public void InitialiseWeights()
         {
-            _weights = new float[_units, _inputSize];    // Is this the right way around for the weights matrix? Make sure to test!
+            _weights = new float[_units, _inputSize];
             switch (_weightInitialisation)
             {
                 case WeightInitialisation.Ones:    // Anonymous functions that initialise weights.
@@ -295,10 +295,48 @@ namespace Backend
                     output = ForwardPass(Function.RowConcatenate(inputs));
                     break;
                 default:
-                    throw new ArgumentException("Merge type must be either Add or Concatenate");
                     // Default shouldn't be checked because all calls to this method should be for merging layers.
+                    // But in the case that it is (certain ComplexModel topologies), we assume Concatenate as it is safer (will always work).
+                    // In practice, the ComplexModel topology may always default to concatenate because of how the class is defined for ease of use.
+                    output = ForwardPass(Function.RowConcatenate(inputs));
+                    break;
             }
             return output;
+        }
+
+        // Saves layer weights and bias to a text file.
+        public void SaveWeightsAndBias(string filename)
+        {
+            if (!filename.EndsWith(".txt"))
+            {
+                filename = filename + ".txt";
+            }
+            using (StreamWriter sw = new StreamWriter(filename))
+            {
+                // Writes dimensions of weights and bias to make loading weights and biases easier.
+                sw.WriteLine(_weights.GetLength(0));
+                sw.WriteLine(_weights.GetLength(1));
+                sw.WriteLine(_bias.Length);
+
+                // What else do we write here?
+            }
+        }
+
+        public void LoadWeightsAndBias(string filename)
+        {
+            
+        }
+
+        // SetWeights sets the weights matrix to a completely new value (not modifying it).
+        public void SetWeights(float[,] weights)
+        {
+            _weights = weights;
+        }
+
+        // SetBias sets the bias vector to a completely new value (not modifying it).
+        public void SetBias(float[] bias)
+        {
+            _bias = bias;
         }
 
         // These two functions GetWeightedOutput() and GetActivationOutput() get the *actual* computed values of the weighted output and activation output.

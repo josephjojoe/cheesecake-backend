@@ -299,6 +299,10 @@
         // matrix that concatenates them with dimensions ((B+C)xA). Extended to an arbitrary number of matrices.
         public static float[,] RowConcatenate(List<float[,]> matrices)
         {
+            if (matrices.Count == 1)
+            {
+                return matrices[0];
+            }
             int rows = 0;
             int columns = matrices[0].GetLength(1);
             foreach (float[,] matrix in matrices)
