@@ -318,13 +318,78 @@ namespace Backend
                 sw.WriteLine(_weights.GetLength(1));
                 sw.WriteLine(_bias.Length);
 
+                sw.Write("\n");
+
                 // What else do we write here?
+                for (int i = 0; i < _weights.GetLength(0); i++)
+                {
+                    for (int j = 0; j < _weights.GetLength(1); j++)
+                    {
+                        // Makes sure that | is not written to finish off the line.
+                        if (j == _weights.GetLength(1) - 1) {
+                            sw.Write(_weights[i, j]);
+                        }
+                        else
+                        {
+                            sw.Write(_weights[i, j] + "|");
+                        }
+                    }
+                    sw.Write("\n");
+                }
+
+                sw.Write("\n");
+
+                for (int i = 0; i < _bias.Length; i++)
+                {
+                    if (i == _bias.Length - 1)
+                    {
+                        sw.Write(_bias[i]);
+                    }
+                    else
+                    {
+                        sw.Write(_bias[i] + "|");
+                    }
+                }
             }
         }
 
         public void LoadWeightsAndBias(string filename)
         {
-            
+            if (!filename.EndsWith(".txt"))
+            {
+                filename = filename + ".txt";
+            }
+            using (StreamReader sr = new StreamReader(filename))
+            {
+                int rows = Convert.ToInt32(sr.ReadLine());
+                int columns = Convert.ToInt32(sr.ReadLine());
+                int biasLength = Convert.ToInt32(sr.ReadLine());
+                if (rows != _weights.GetLength(0) || columns != _weights.GetLength(1) || biasLength != _bias.Length)
+                {
+                    throw new ArgumentException("Selected file is incompatible.");
+                }
+
+                // Reads empty line (included in parameters file for human readability) so that we can get to the weights.
+                sr.ReadLine();
+
+                float[,] weights = new float[rows, columns];
+                for (int i = 0; i < rows; i++)
+                {
+                    float[] line = Array.ConvertAll(sr.ReadLine().Split("|"), element => float.Parse(element));
+                    for (int j = 0; j < columns; j++)
+                    {
+                        weights[i,j] = line[j];
+                    }
+                }
+                SetWeights(weights);
+
+                // Reads empty line (included in parameters file for human readability) so that we can get to the bias.
+                sr.ReadLine();
+
+                // Gets last line and puts into bias vector.
+                float[] bias = Array.ConvertAll(sr.ReadLine().Split("|"), element => float.Parse(element));
+                SetBias(bias);
+            }
         }
 
         // SetWeights sets the weights matrix to a completely new value (not modifying it).

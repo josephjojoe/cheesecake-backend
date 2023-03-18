@@ -60,21 +60,10 @@
 
             model.Compile(CostFunction.MSE);
 
-            // Input data must be batched as 2d matrices.
-            float[,] inputdata = new float[1, 1];
-            inputdata[0, 0] = 6.7f;
-            float[,] output = model.ForwardPropagate(inputdata);
-
-            Console.WriteLine(output.GetLength(0));
-            Console.WriteLine(output.GetLength(1));
-
-            for (int i = 0; i < output.GetLength(0); i++)
-            {
-                for (int j = 0; j < output.GetLength(1); j++)
-                {
-                    Console.WriteLine(output[i, j]);
-                }
-            }
+            Console.WriteLine(dense_stack2_3.GetWeightsDimension()[0]);
+            Console.WriteLine(dense_stack2_3.GetWeightsDimension()[1]);
+            dense_stack2_3.SaveWeightsAndBias("parameters.txt");
+            dense_stack2_3.LoadWeightsAndBias("parameters.txt");
 
             Console.ReadLine();
         }
