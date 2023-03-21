@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -104,6 +106,20 @@ namespace Backend
             for (int i = 0; i < _layers.Count; i++)
             {
                 _queue.Enqueue(_layers[i]);
+            }
+        }
+
+        // Sets parameters for a given layer in the linear model from a text file.
+        public void SetParameters(int index, string filename)
+        {
+            try
+            {
+                DenseLayer layer = (DenseLayer)_layers[index];
+                layer.LoadWeightsAndBias(filename);
+            }
+            catch
+            {
+                throw new ArgumentException("Selected file is incompatible.");
             }
         }
 
