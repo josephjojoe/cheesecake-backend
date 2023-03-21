@@ -514,6 +514,8 @@
                     layers.Add(newLayer);
                     break;
                 }
+                // To do - fix multi layer input validation.
+                // Then model inference and that's it!
                 
 
                 // Explicit casts needed as activation, weight initialisation, and bias initialisation are nullable.
