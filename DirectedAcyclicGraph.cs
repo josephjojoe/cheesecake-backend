@@ -164,5 +164,18 @@ namespace Backend
             }
             return startNodes;
         }
+
+        public List<Layer> GetEndNodes(Dictionary<Layer, List<Layer>> topology)
+        {
+            List<Layer> endNodes = new List<Layer>();
+            foreach (Layer layer in _topologicalSortOrder)
+            {
+                if (GetOutgoingNodes(topology, layer).Count == 0)
+                {
+                    endNodes.Add(layer);
+                }
+            }
+            return endNodes;
+        }
     }
 }

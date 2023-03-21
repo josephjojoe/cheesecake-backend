@@ -53,6 +53,10 @@ namespace Backend
             {
                 throw new Exception("Model must be compiled before training");
             }
+            if (graph.GetEndNodes(graph.GetTopology()).Count > 1)
+            {
+                throw new Exception("Multiple output layers disallowed.");
+            }
             List<Layer> order = graph.GetTopologicalSort();
             // Sets up activation output on first layer (the input layer).
             inputs = order[0].ForwardPass(inputs);

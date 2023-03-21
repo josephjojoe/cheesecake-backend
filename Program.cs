@@ -77,7 +77,6 @@
             model.AddLayer(layer);
 
             bool addMoreLayers = true;
-            
             while (addMoreLayers == true)
             {
                 int units = -1;
@@ -378,8 +377,158 @@
 
         static void NonLinearModelBuilder()
         {
-            // ComplexModel model = new ComplexModel();
-            Console.WriteLine("Boop!");
+            ComplexModel model = new ComplexModel();
+            List<Layer> layers = new List<Layer>();
+
+            int inputSize = 0;
+            do
+            {
+                Console.WriteLine("Enter model input size:");
+                try
+                {
+                    inputSize = int.Parse(Console.ReadLine());
+                }
+                catch
+                {
+                    Console.WriteLine("Invalid value.");
+                }
+            }
+            while (inputSize < 1);
+
+            InputLayer inputLayer = new InputLayer(inputSize);
+            layers.Add(inputLayer);
+            model.AddInputLayer(inputLayer);
+
+            bool addMoreLayers = true;
+            while (addMoreLayers == true)
+            {
+                int units = -1;
+                do
+                {
+                    Console.WriteLine("Enter dense layer units:");
+                    try
+                    {
+                        units = int.Parse(Console.ReadLine());
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Invalid value.");
+                    }
+                }
+                while (units < 1);
+
+                Activation? activation = null;
+                do
+                {
+                    int activationChoice = ChooseOption(new List<String>() { "ReLU", "Sigmoid", "Tanh", "SiLU", "None" },
+                        "Choose activation function:");
+                    switch (activationChoice)
+                    {
+                        case 0:
+                            activation = Activation.ReLU;
+                            break;
+                        case 1:
+                            activation = Activation.Sigmoid;
+                            break;
+                        case 2:
+                            activation = Activation.Tanh;
+                            break;
+                        case 3:
+                            activation = Activation.SiLU;
+                            break;
+                        case 4:
+                            activation = Activation.None;
+                            break;
+                        default:
+                            // Should never occur, but having a default case is good C# practice for switch-case.
+                            activation = Activation.None;
+                            break;
+                    }
+                }
+                while (activation == null);
+
+                WeightInitialisation? weightInitialisation = null;
+                do
+                {
+                    int weightInitialisationChoice = ChooseOption(new List<String>() { "Zeroes", "Ones", "Random", "Xavier" },
+                        "Choose weight initialisation function:");
+                    switch (weightInitialisationChoice)
+                    {
+                        case 0:
+                            weightInitialisation = WeightInitialisation.Zeroes;
+                            break;
+                        case 1:
+                            weightInitialisation = WeightInitialisation.Ones;
+                            break;
+                        case 2:
+                            weightInitialisation = WeightInitialisation.Random;
+                            break;
+                        case 3:
+                            weightInitialisation = WeightInitialisation.Xavier;
+                            break;
+                        default:
+                            // Should never occur, but having a default case is good C# practice for switch-case.
+                            weightInitialisation = WeightInitialisation.Xavier;
+                            break;
+                    }
+                }
+                while (weightInitialisation == null);
+
+                BiasInitialisation? biasInitialisation = null;
+                do
+                {
+                    int biasInitialisationChoice = ChooseOption(new List<String>() { "Zeroes", "Ones", "Random", "Xavier" },
+                        "Choose bias initialisation function:");
+                    switch (biasInitialisationChoice)
+                    {
+                        case 0:
+                            biasInitialisation = BiasInitialisation.Zeroes;
+                            break;
+                        case 1:
+                            biasInitialisation = BiasInitialisation.Ones;
+                            break;
+                        case 2:
+                            biasInitialisation = BiasInitialisation.Random;
+                            break;
+                        case 3:
+                            biasInitialisation = BiasInitialisation.Xavier;
+                            break;
+                        default:
+                            // Should never occur, but having a default case is good C# practice for switch-case.
+                            biasInitialisation = BiasInitialisation.Xavier;
+                            break;
+                    }
+                }
+                while (biasInitialisation == null);
+
+                Console.WriteLine("Enter index of the previous layer to form a connection from.");
+                Console.WriteLine("If this is a merge layer, enter indexes in the format:");
+                Console.WriteLine("index1,index2,...,indexN");
+                Console.WriteLine("Press enter without input if you wish to connect this layer to the most recently created layer.");
+                string indexResponse = Console.ReadLine();
+                if (indexResponse == "")
+                {
+                    DenseLayer newLayer = new DenseLayer(units, (Activation)activation,
+                    (WeightInitialisation)weightInitialisation, (BiasInitialisation)biasInitialisation, layers.Last());
+                    model.AddLayer(layers.Last(), newLayer);
+                    layers.Add(newLayer);
+                    break;
+                }
+                
+
+                // Explicit casts needed as activation, weight initialisation, and bias initialisation are nullable.
+
+                Console.WriteLine("Add more layers? (Y/N)");
+                string response = Console.ReadLine();
+                if (response.ToLower() == "y")
+                {
+                    continue;
+                }
+                else
+                {
+                    addMoreLayers = false;
+                }
+            }
         }
     }
 }
