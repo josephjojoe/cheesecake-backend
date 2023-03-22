@@ -1,4 +1,6 @@
-﻿namespace Backend
+﻿using System.ComponentModel;
+
+namespace Backend
 {
     internal class Program
     {
@@ -501,25 +503,150 @@
                 }
                 while (biasInitialisation == null);
 
-                Console.WriteLine("Enter index of the previous layer to form a connection from.");
-                Console.WriteLine("If this is a merge layer, enter indexes in the format:");
-                Console.WriteLine("index1,index2,...,indexN");
-                Console.WriteLine("Press enter without input if you wish to connect this layer to the most recently created layer.");
-                string indexResponse = Console.ReadLine();
-                if (indexResponse == "")
+                Console.WriteLine("Does this layer connect directly and *only* from the immediately previous layer?");
+                string directConnectionReponse = Console.ReadLine();
+                if (directConnectionReponse.ToLower() == "y")
                 {
                     DenseLayer newLayer = new DenseLayer(units, (Activation)activation,
                     (WeightInitialisation)weightInitialisation, (BiasInitialisation)biasInitialisation, layers.Last());
                     model.AddLayer(layers.Last(), newLayer);
                     layers.Add(newLayer);
-                    break;
                 }
-                // To do - fix multi layer input validation.
-                // Then model inference and that's it!
-                
+                else
+                {
+                    int singleOrMultipleIndices = ChooseOption(new List<string>() { "One previous layer",
+                        "Merges multiple previous layers"}, "Does this layer connect from one previous layer or does it merge outputs from multiple previous layers?");
+                    switch (singleOrMultipleIndices)
+                    {
+                        case 0:
+                            // Case for just one previous layer.
+                            Console.WriteLine("Enter index of the previous layer.");
+                            int index = -1;
+                            do
+                            {
+                                try
+                                {
+                                    index = int.Parse(Console.ReadLine());
+                                    if (!Enumerable.Range(0, layers.Count).ToList().Contains(index))
+                                    {
+                                        // For input integers which aren't in the correct range.
+                                        Console.WriteLine("Invalid number.");
+                                    }
+                                }
+                                catch
+                                {
+                                    // For inputs which are of invalid type.
+                                    Console.WriteLine("Invalid number.");
+                                }
+                            }
+                            while (!Enumerable.Range(0, layers.Count).ToList().Contains(index));
+                            DenseLayer newLayer = new DenseLayer(units, (Activation)activation,
+                            (WeightInitialisation)weightInitialisation, (BiasInitialisation)biasInitialisation, layers[index]);
+                            layers.Add(newLayer);
+                            model.AddLayer(layers[index], newLayer);
+                            break;
+                        case 1:
+                            // Case for multiple previous layers.
+                            Console.WriteLine("How many previous layers is this layer merging?");
+                            int previousLayersNumber = -1;
+                            do
+                            {
+                                try
+                                {
+                                    previousLayersNumber = int.Parse(Console.ReadLine());
+                                    // This is because a layer *can* have just one input layer, but then control flow shouldn't pass to this method.
+                                    // One previous layer should be handled as standard in the above code.
+                                    if (previousLayersNumber < 2)
+                                    {
+                                        Console.WriteLine("Invalid number of input layers.");
+                                    }
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("Invalid input.");
+                                }
+                            }
+                            while (previousLayersNumber < 2);
 
-                // Explicit casts needed as activation, weight initialisation, and bias initialisation are nullable.
+                            int[] layerIndices = new int[previousLayersNumber];
+                            for (int i = 0; i < previousLayersNumber; i++)
+                            {
+                                Console.WriteLine($"Index of layer {i}:");
+                                int layerIndex = -1;
+                                do
+                                {
+                                    try
+                                    {
+                                        layerIndex = int.Parse(Console.ReadLine());
+                                        if (layerIndex < 0)
+                                        {
+                                            Console.WriteLine("Invalid layer index.");
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        Console.WriteLine("Invalid input.");
+                                    }
+                                }
+                                while (!Enumerable.Range(0, layers.Count).ToList().Contains(layerIndex));
+                                layerIndices[i] = layerIndex;
+                            }
 
+                            if (layerIndices.Distinct().Count() == layerIndices.Count())
+                            {
+                                List<Layer> inputLayers = new List<Layer>();
+                                for (int i = 0; i < layerIndices.Count(); i++)
+                                {
+                                    inputLayers.Add(layers[layerIndices[i]]);
+                                }
+                                int mergeTypeChoice = ChooseOption(new List<string>() { "Concatenate", "Add " }, "Choose merge type:");
+
+                                if (mergeTypeChoice == 0)
+                                {
+                                    DenseLayer newMergeLayer = new DenseLayer(units, (Activation)activation,
+                                    (WeightInitialisation)weightInitialisation, (BiasInitialisation)biasInitialisation,
+                                    previousLayers: inputLayers, mergeType: MergeType.Concatenate);
+                                    layers.Add(newMergeLayer);
+                                    for (int i = 0; i < layerIndices.Length; i++)
+                                    {
+                                        model.AddLayer(layers[layerIndices[i]], newMergeLayer);
+                                    }
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        DenseLayer newMergeLayer = new DenseLayer(units, (Activation)activation,
+                                        (WeightInitialisation)weightInitialisation, (BiasInitialisation)biasInitialisation,
+                                        previousLayers: inputLayers, mergeType: MergeType.Add);
+                                        layers.Add(newMergeLayer);
+                                        for (int i = 0; i < layerIndices.Length; i++)
+                                        {
+                                            model.AddLayer(layers[layerIndices[i]], newMergeLayer);
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        Console.WriteLine("Invalid merge type selected. Concatenate has been selected instead.");
+                                        DenseLayer newMergeLayer = new DenseLayer(units, (Activation)activation,
+                                        (WeightInitialisation)weightInitialisation, (BiasInitialisation)biasInitialisation,
+                                        previousLayers: inputLayers, mergeType: MergeType.Concatenate);
+                                        layers.Add(newMergeLayer);
+                                        for (int i = 0; i < layerIndices.Length; i++)
+                                        {
+                                            model.AddLayer(layers[layerIndices[i]], newMergeLayer);
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("Invalid layer configuration. Multiple edges are not permitted between two layers.");
+                                Console.WriteLine("Did you input the same index twice?");
+                            }
+                            break;
+                    }
+                }
                 Console.WriteLine("Add more layers? (Y/N)");
                 string response = Console.ReadLine();
                 if (response.ToLower() == "y")
@@ -530,6 +657,57 @@
                 {
                     addMoreLayers = false;
                 }
+            }
+            // Cost function is redundant in this implementation as we are running in inference as a demonstration.
+            try
+            {
+                model.Compile(CostFunction.MSE);
+
+                Console.WriteLine($"The input size of this model is {layers[0].GetOutputSize()}");
+
+                float[,] inferenceInput = new float[layers[0].GetOutputSize(), 1];
+                bool doInference = true;
+                while (doInference == true)
+                {
+                    for (int i = 0; i < inferenceInput.GetLength(0); i++)
+                    {
+                        Console.WriteLine($"Enter component {i} of the input vector:");
+                        try
+                        {
+                            float component = float.Parse(Console.ReadLine());
+                            inferenceInput[i, 0] = component;
+                        }
+                        catch
+                        {
+                            Console.WriteLine("Invalid input. Component has been set to 0.");
+                            float component = 0;
+                            inferenceInput[i, 0] = component;
+                        }
+                    }
+
+                    float[,] inferenceOutput = model.ForwardPropagate(inferenceInput);
+                    Console.WriteLine("Output vector:");
+                    for (int i = 0; i < inferenceOutput.GetLength(0); i++)
+                    {
+                        Console.WriteLine(inferenceOutput[i, 0]);
+                    }
+
+                    Console.WriteLine("Would you like to continue inference on examples? (Y/N)");
+                    string inferenceResponse = Console.ReadLine();
+                    if (inferenceResponse.ToLower() == "y")
+                    {
+                        doInference = true;
+                    }
+                    else
+                    {
+                        doInference = false;
+                    }
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Multiple outputs exposed in model - unsuitable for inference.");
+                Console.WriteLine("Please try again!");
             }
         }
     }
