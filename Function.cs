@@ -71,7 +71,7 @@
             return sum / 2;
         }
 
-        // Computes gradient ∇aC of the MSE cost function with respect to the activations (the output vector).
+        // Computes gradient (delta)aC of the MSE cost function with respect to the activations (the output vector).
         public static float[] MeanSquaredErrorDerivative(float[] expected, float[] output)
         {
             if (expected.Length != output.Length)
