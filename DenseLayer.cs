@@ -241,7 +241,6 @@ namespace Backend
                     output = ForwardPass(concatenateInput.ToArray());
                     break;
                 default:
-                    // Throw some error - method shouldn't be used if not merging multiple branches of a layer topology.
                     throw new ArgumentException("Merge type must be selected.");
             }
             return output;
@@ -297,7 +296,7 @@ namespace Backend
                 default:
                     // Default shouldn't be checked because all calls to this method should be for merging layers.
                     // But in the case that it is (certain ComplexModel topologies), we assume Concatenate as it is safer (will always work).
-                    // In practice, the ComplexModel topology may always default to concatenate because of how the class is defined for ease of use.
+                    // In practice, the ComplexModel topology may default to concatenate because of how the class is defined for ease of use.
                     output = ForwardPass(Function.RowConcatenate(inputs));
                     break;
             }

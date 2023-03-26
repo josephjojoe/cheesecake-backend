@@ -19,6 +19,7 @@ namespace Backend
 
         // ForwardPass accepting List<float[]> and List<float[,]> aren't included in this abstract class definition intentionally.
         // This is because InputLayer does not need to implement them - they are, however, implemented in DenseLayer.cs
+        
         public abstract int GetOutputSize();
 
         public abstract float[,] GetWeightedOutput();

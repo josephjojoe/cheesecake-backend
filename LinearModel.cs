@@ -29,8 +29,6 @@ namespace Backend
         // Uses the errors generated in backpropagation to change the model's weights and biases.
         public void TrainingStep(List<float[,]> errors)
         {
-            // Okay this loop isn't executing for some reason.
-            // Okay the reason is that errors doesn't have all the errors computed for some reason.
             for (int i = _layers.Count - 1; i > 0; i--)
             {
                 ModifyWeightsAndBiases(errors[_layers.Count - 1 - i], (DenseLayer)_layers[i], _layers[i - 1], _learningRate);
