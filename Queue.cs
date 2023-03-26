@@ -8,58 +8,58 @@ namespace Backend
 {
     public class Queue<T>
     {
-        private T[] queue;
-        private int headPointer = 0;
-        private int tailPointer = -1;
+        private T[] _queue;
+        private int _headPointer = 0;
+        private int _tailPointer = -1;
         private int _queueSize;
 
         public Queue(int queueSize)
         {
-            queue = new T[queueSize];
+            _queue = new T[queueSize];
             _queueSize = queueSize;
         }
 
         public T Peek()
         {
-            if (headPointer > tailPointer)
+            if (_headPointer > _tailPointer)
             {
                 throw new InvalidOperationException("Queue is empty");
             }
-            return queue[headPointer];
+            return _queue[_headPointer];
         }
 
         public T PeekEnd()
         {
-            if (headPointer > tailPointer)
+            if (_headPointer > _tailPointer)
             {
                 throw new InvalidOperationException("Queue is empty");
             }
-            return queue[tailPointer];
+            return _queue[_tailPointer];
         }
 
         public void Enqueue(T item)
         {
-            if (tailPointer + 1 == _queueSize)
+            if (_tailPointer + 1 == _queueSize)
             {
                 throw new InvalidOperationException("Queue is full");
             }
             else
             {
-                tailPointer++;
-                queue[tailPointer] = item;
+                _tailPointer++;
+                _queue[_tailPointer] = item;
             }
         }
 
         public T Dequeue()
         {
-            if (headPointer > tailPointer)
+            if (_headPointer > _tailPointer)
             {
                 throw new InvalidOperationException("Queue is empty");
             }
             else
             {
-                headPointer++;
-                return queue[headPointer - 1];
+                _headPointer++;
+                return _queue[_headPointer - 1];
             }
         }
 
@@ -70,13 +70,13 @@ namespace Backend
 
         public void ResetPointers()
         {
-            headPointer = 0;
-            tailPointer = -1;
+            _headPointer = 0;
+            _tailPointer = -1;
         }
 
         public void ResetHeadPointer()
         {
-            headPointer = 0;
+            _headPointer = 0;
         }
     }
 }

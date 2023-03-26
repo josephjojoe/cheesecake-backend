@@ -44,11 +44,13 @@ namespace Backend
                     errors.Add(ComputeFinalLayerError(model.GetCostFunction(), layers[layers.Count - 1].GetActivation(),
                         layers[layers.Count - 1].GetWeightedOutput(), layers[layers.Count - 1].GetActivationOutput(), sample.Item2));
 
+                    // Recursive error computation after final layer error is calculated.
                     for (int i = layers.Count - 2; i > 0; i--)
                     {
                         errors.Add(ComputeLayerError(errors[layers.Count - 2 - i], ((DenseLayer)layers[i + 1]).GetWeights(), layers[i].GetActivation(), layers[i].GetWeightedOutput()));
                     }
 
+                    // Modifies model parameters and collects new sample for next loop iteration.
                     model.TrainingStep(errors);
                     sample = data.GetData(batchSize);
                 }

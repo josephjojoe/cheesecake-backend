@@ -8,7 +8,7 @@ namespace Backend
 {
     // An input layer has no weights, biases, or activations.
     // Its sole purpose is to propagate an input through the network during training and inference.
-    // It acts as a springboard from which the rest of the neural network is built.
+    // It acts as a springboard from which the rest of the neural network is built, and an entry point for the optimiser.
     public class InputLayer : Layer
     {
         // Input size is also referred to as 'shape' in other libraries - it allows other layer input/output shapes to be determined.

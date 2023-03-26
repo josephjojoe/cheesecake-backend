@@ -242,7 +242,7 @@ namespace Backend
                     break;
                 default:
                     // Throw some error - method shouldn't be used if not merging multiple branches of a layer topology.
-                    throw new NotImplementedException();
+                    throw new ArgumentException("Merge type must be selected.");
             }
             return output;
         }
@@ -320,7 +320,6 @@ namespace Backend
 
                 sw.Write("\n");
 
-                // What else do we write here?
                 for (int i = 0; i < _weights.GetLength(0); i++)
                 {
                     for (int j = 0; j < _weights.GetLength(1); j++)

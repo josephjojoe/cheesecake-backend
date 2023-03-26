@@ -48,12 +48,14 @@ namespace Backend
                     NonLinearModelBuilder();
                     break;
                 default:
-                    // Default should never be executed because of the data validation in ChooseOption(), but C# mandates a default for switch-case.
+                    // Default should never be executed because of the data validation in ChooseOption(), but a default for switch-case is good practise.
                     LinearModelBuilder();
                     break;
             }
         }
 
+        // Allows the user to build a linear model.
+        // Relatively self-documenting/explanatory code.
         static void LinearModelBuilder()
         {
             LinearModel model = new LinearModel();
@@ -377,6 +379,7 @@ namespace Backend
             }
         }
 
+        // Allows the user to build a non-linear model and run it in inference on vectors.
         static void NonLinearModelBuilder()
         {
             ComplexModel model = new ComplexModel();
@@ -659,6 +662,7 @@ namespace Backend
                 }
             }
             // Cost function is redundant in this implementation as we are running in inference as a demonstration.
+            // Holdover from the Model abstract base class.
             try
             {
                 model.Compile(CostFunction.MSE);

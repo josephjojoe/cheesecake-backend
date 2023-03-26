@@ -12,8 +12,6 @@ namespace Backend
         // This is because Linear and Complex models will implement the function with different parameters leading to a differing
         // method signature.
 
-        // public abstract float[] ForwardPropagate(float[] input);
-
         public abstract float[,] ForwardPropagate(float[,] input);
 
         public abstract void Compile(CostFunction costFunction);

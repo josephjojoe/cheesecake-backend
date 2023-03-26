@@ -36,12 +36,15 @@ namespace Backend
                 string receivedOutputs;
                 while ((line = reader.ReadLine()) != null)
                 {
+                    // Separates inputs and outputs
                     receivedInputs = line.Split('|')[0];
                     receivedOutputs = line.Split('|')[1];
 
+                    // Splits inputs and outputs into a list of floats
                     input = Array.ConvertAll(receivedInputs.Split(','), element => float.Parse(element));
                     output = Array.ConvertAll(receivedOutputs.Split(','), element => float.Parse(element));
 
+                    // Fail-safe to ensure compatibility with the model
                     if (input.Length != inputFeatureSize || output.Length != outputFeatureSize)
                     {
                         throw new Exception("Dataset inputs/outputs length didn't match specified inputs/outputs length");

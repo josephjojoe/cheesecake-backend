@@ -55,9 +55,6 @@
             return 1;
         }
 
-        public readonly static Dictionary<Func<float, float>, Func<float, float>> ActivationDictionary = new Dictionary<Func<float, float>, Func<float, float>>
-        {{ ReLU, ReLUDerivative }, { Sigmoid, SigmoidDerivative }, { Tanh, TanhDerivative }, { SiLU, SiLUDerivative }, { None, NoneDerivative }};
-
 
         // Definition as per http://neuralnetworksanddeeplearning.com/chap2.html for a single training example.
         public static float MeanSquaredError(float[] expected, float[] output)
@@ -187,11 +184,6 @@
             return transpose;
         }
 
-        // Func<float, float, float> means that we are dealing with functions that take in two float arguments and output a float.
-        public readonly static Dictionary<Func<float[], float[], float>, Func<float[], float[], float[]>> CostDictionary =
-            new Dictionary<Func<float[], float[], float>, Func<float[], float[], float[]>>
-        {{ MeanSquaredError, MeanSquaredErrorDerivative }, { MeanAbsoluteError, MeanAbsoluteErrorDerivative }};
-
         // Delegate to allow for vectorisation of functions - application of the function to every element of an array.
         // Only allows functions that map floats to floats - error checking is therefore not required in Vectorise and associated overloads.
         public delegate float VectorisationDelegate(float input);
@@ -245,7 +237,7 @@
         {
             if (matrix.GetLength(1) != vector.Length)
             {
-                // Throw some error - dimensions must match.
+                throw new ArgumentException("Dimensions of arrays to be multiplied must match");
             }
             float[] output = new float[matrix.GetLength(0)];
             float temp;
@@ -265,7 +257,7 @@
         {
             if (vector1.Length != vector2.Length)
             {
-                // Throw some error - dimensions must match for element-wise addition.
+                throw new ArgumentException("Dimensions of arrays to be added must match");
             }
             float[] output = new float[vector1.Length];
             for (int i = 0; i < vector1.Length; i++)
@@ -280,7 +272,7 @@
         {
             if (!(matrix1.GetLength(0) == matrix2.GetLength(0) && matrix1.GetLength(1) == matrix2.GetLength(1)))
             {
-                // Throw some error - dimensions must match for Hadamard product.
+                throw new ArgumentException("Dimensions of arrays to be added must match");
             }
             float[,] output = new float[matrix1.GetLength(0), matrix1.GetLength(1)];
             for (int i = 0; i < matrix1.GetLength(0); i++)
@@ -353,7 +345,7 @@
         {
             if (!(matrix1.GetLength(0) == matrix2.GetLength(0) && matrix1.GetLength(1) == matrix2.GetLength(1)))
             {
-                // Throw some error - dimensions must match for Hadamard product.
+                throw new ArgumentException("Dimensions of arrays to be multiplied must match");
             }
             float[,] output = new float[matrix1.GetLength(0), matrix1.GetLength(1)];
             for (int i = 0; i < matrix1.GetLength(0); i++)
@@ -371,7 +363,7 @@
         {
             if (!(vector1.Length == vector2.Length))
             {
-                // Throw some error - dimensions must match.
+                throw new ArgumentException("Dimensions of arrays to be multiplied must match");
             }
             float[] output = new float[vector1.Length];
             for (int i = 0; i < vector1.Length; i++)
