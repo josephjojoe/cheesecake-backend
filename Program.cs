@@ -363,10 +363,10 @@ namespace Backend
                 while (!Enumerable.Range(0, layers.Count).ToList().Contains(index));
 
                 Console.WriteLine("Enter filename to save parameters into:");
-                string parametersFileName = Console.ReadLine();
+                string file = Console.ReadLine();
                 try
                 {
-                    ((DenseLayer)model.GetLayers()[index]).SaveWeightsAndBias(parametersFileName);
+                    ((DenseLayer)model.GetLayers()[index]).SaveWeightsAndBias(file);
                     Console.WriteLine("Parameters successfully saved.");
                 }
                 catch

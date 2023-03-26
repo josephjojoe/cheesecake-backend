@@ -150,8 +150,7 @@ namespace Backend
             return costGrads;
         }
 
-        public static float[,] ComputeFinalLayerError(CostFunction cost, Activation finalLayerActivationFunction, float[,] finalLayerWeightedOutput,
-                                                      float[,] finalLayerActivationOutput,float[,] expected)
+        public static float[,] ComputeFinalLayerError(CostFunction cost, Activation finalLayerActivationFunction, float[,] finalLayerWeightedOutput, float[,] finalLayerActivationOutput,float[,] expected)
         {
             float[,] nablaAC = ComputeCostGrads(finalLayerActivationOutput, expected, cost);
             float[,] sigmaPrimeWeightedOutput = finalLayerWeightedOutput;
