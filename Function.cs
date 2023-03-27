@@ -96,7 +96,7 @@
             return sum / expected.Length;
         }
 
-        // Implementation as per https://stats.stackexchange.com/questions/312737/mean-absolute-error-mae-derivative
+        // Implementation as per https://stats.stackexchange.com/questions/312737
         public static float[] MeanAbsoluteErrorDerivative(float[] expected, float[] output)
         {
             if (expected.Length != output.Length)
